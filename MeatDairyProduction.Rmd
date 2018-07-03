@@ -95,7 +95,7 @@ ggplot(psy_long, aes(x = year, y = gg, fill = commodity)) +
 ```{r warning=F, message=F}
 ##Proportions
 prop_sy <- prod_state_year %>%
-  mutate(prop = meat_gg / (dairy_gg + meat_gg))
+  mutate(prop = dairy_gg / (dairy_gg + meat_gg))
 
 prop_s <- prop_sy %>%
   group_by(state) %>%
@@ -111,17 +111,17 @@ ggplot(prop_s, aes(x = state, y = prop_mn)) +
   geom_bar(stat="identity", colour="white") +
   geom_errorbar(aes(ymin=(prop_mn-(prop_se*1.96)), ymax=(prop_mn+(prop_se*1.96))), width=0.25) +
   scale_y_continuous(name="Proportion", labels = scales::comma) +
-  ggtitle("Mean Proportion (Meat of Total Production)")
+  ggtitle("Mean Proportion (Dairy of Total Production)")
 
 ggplot(prop_s, aes(x = state, y = prop_md)) + 
   geom_bar(stat="identity", colour="white") +
   scale_y_continuous(name="Proportion", labels = scales::comma) +
-  ggtitle("Median Proportion (Meat of Total Production)")
+  ggtitle("Median Proportion (Dairy of Total Production)")
 
 ggplot(prop_s, aes(x = state, y = prop_max)) + 
   geom_bar(stat="identity", colour="white") +
   scale_y_continuous(name="Proportion", labels = scales::comma) +
-  ggtitle("Maximum Proportion (Meat of Total Production)")
+  ggtitle("Maximum Proportion (Dairy of Total Production)")
 
 prop_s
 
