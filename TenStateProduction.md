@@ -52,7 +52,7 @@ meat_prod_Astates <- meat_prod_Astates_Data %>%
 meat_prod_Astates_long <- meat_prod_Astates %>%
    gather(key = year, value = meat_kg, -state) %>%
    mutate_at(vars(year), as.integer) %>%
-   mutate(meat_gg = meat_kg * 0.000001) %>%  #convert from kg to gg
+   mutate(meat_gg = meat_kg * 0.001) %>%  #convert from tons to gg
    select(-meat_kg)
 
 ##DAIRY
@@ -72,7 +72,7 @@ dairy_prod_Astates <- dairy_prod_Amunis %>%
 dairy_prod_Astates_long <- dairy_prod_Astates %>%
   gather(key = year, value = dairy_kg, -state) %>%
   mutate_at(vars(year), as.integer) %>%
-  mutate(dairy_gg = dairy_kg * 0.000001) %>%  #convert from kg to gg
+  mutate(dairy_gg = dairy_kg * 0.001) %>%  #convert from tons to gg
   select(-dairy_kg)
 
 
