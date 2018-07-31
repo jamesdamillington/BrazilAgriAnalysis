@@ -1,0 +1,292 @@
+---
+title: "Land Use and Production Time Series - BrazilAgriAnalysis"
+author: "James D.A. Millington"
+date: "July 2018"
+output: 
+  html_document: 
+    keep_md: yes
+    code_folding: hide
+    df_print: paged
+---
+
+```{r results='hide', warning=F, message=F}
+
+rm(list=ls())
+library(tidyverse)
+library(readxl)
+
+```
+
+
+```{r warning=F, message=F}
+yrs <- seq(2000, 2015, 1)
+
+#load the region file (used to match each cell to a municipality)
+region <- read.csv("SummaryTables/region.csv")
+
+i <- 1
+
+
+for(i in seq_along(yrs)){
+  
+  
+  if(i == 1){
+    lc_dat <- read_csv(paste0("SummaryTables/LCs",yrs[i],"_PastureB.csv"))   #load empirical map summary data (created using summarise_LCmaps.r)
+    lc_dat <- lc_dat %>%
+      mutate(year = yrs[i]) 
+  }
+  
+  else {
+    
+    lc <- read_csv(paste0("SummaryTables/LCs",yrs[i],"_PastureB.csv"))   #load empirical map summary data (created using summarise_LCmaps.r)
+    lc <- lc %>%
+      mutate(year = yrs[i])
+    
+    lc_dat <- bind_rows(lc_dat, lc)
+  }
+  
+}  
+
+#add state ID
+lc_dat <- lc_dat %>%
+  mutate(state = (muniID %/% 100000)) %>%
+  mutate(state = if_else(state == 17, "TO", 
+      if_else(state == 29, "BA",
+      if_else(state == 31, "MG",
+      if_else(state == 35, "SP",
+      if_else(state == 41, "PR",
+      if_else(state == 42, "SC",
+      if_else(state == 43, "RS", 
+      if_else(state == 50, "MS",
+      if_else(state == 51, "MT",
+      if_else(state == 52, "GO", "NA"
+      ))))))))))
+    )
+
+#LC1 = Nature
+#LC2 = Other Agri
+#LC3 = Agri
+#LC4 = Other
+#LC5 = Pasture
+
+#add cell count columns  
+lc_dat <- lc_dat %>%
+      mutate(Nature = round(LC1 * NonNAs,0)) %>%
+      mutate(OAgri = round(LC2 * NonNAs,0)) %>%
+      mutate(Agri = round(LC3 * NonNAs,0)) %>%
+      mutate(Other = round(LC4 * NonNAs,0)) %>%
+      mutate(Pasture = round(LC5 * NonNAs,0))
+
+
+lc_cells_long <- lc_dat %>%
+  select(year:Pasture) %>%
+  gather(key = LC, value = cells, -year, -state)
+
+lc_cells_long_states <- lc_cells_long %>% 
+  group_by(state, year,LC) %>%
+  summarise_at(vars(matches("cells")),sum)
+
+```
+
+
+
+```{r warning=F, message=F}
+
+c <- lc_cells_long_states %>% 
+  ggplot(aes(x = year, y = cells, fill = LC)) + 
+  geom_bar(stat = "identity") +
+  scale_y_continuous(name = "Cells", labels = scales::comma) +
+  facet_grid(.~state) +
+  ggtitle("Ten States")
+print(c)
+
+
+```
+
+
+
+
+```{r warning=F, message=F}
+
+lc_cells_long_brazil <- lc_cells_long_states %>% 
+  group_by(year,LC) %>%
+  summarise_at(vars(matches("cells")),sum)
+
+c <- lc_cells_long_brazil %>% 
+  ggplot(aes(x = year, y = cells, fill = LC)) + 
+  geom_bar(stat = "identity", colour="white") +
+  scale_y_continuous(name = "Cells", labels = scales::comma) +
+  #facet_grid(.~state) +
+  ggtitle("Ten States")
+print(c)
+
+
+```
+
+
+
+
+```{r warning=F, message=F}
+##Load Production Data
+meat_prod_Astates_Data <- read_excel("Cattle_meat_production_Kg_2000_2017_all_states.xlsx", sheet = "Plan1", skip = 1)  #data for all states Astates
+
+#dairy data are by municiaplity for all states (Amunis)
+dairy_prod_Amunis_Data <- read_excel("dairy_Municipalities_Brazil.xlsx", sheet = "Tabela", skip = 1, na = c("", "-", "..."))
+
+#maize data are by municiaplity for all states (Amunis)
+maize_prod_Amunis_Data <- read_excel("maize_brazil.xlsx", sheet = "Production (tons)", skip = 1, na = c("", "-", "..."))
+
+#maize data are by municiaplity for all states (Amunis)
+soy_prod_Amunis_Data <- read_excel("soybean_brazil.xlsx", sheet = "Production (Tons)", skip = 1, na = c("", "-", "..."))
+
+
+Fstate_vals <- c(17,	29,	31,	35,	41,	42,	43,	50,	51,	52)
+Fstate_abbrev <- c("TO", "BA", "MG", "SP", "PR",  "SC", "RS", "MS", "MT", "GO")
+
+Astate_codes <- meat_prod_Astates_Data %>%
+  select(NM_UF_SIGLA, CD_GCUF) %>%
+  rename(state = NM_UF_SIGLA, stateid = CD_GCUF) %>%
+  filter(!is.na(state))    #safer way to remove text line at bottom of state column
+  
+
+##MEAT
+meat_prod_Astates <- meat_prod_Astates_Data %>%
+  rename(state = NM_UF_SIGLA) %>%
+  select(-NM_UF, -CD_GCUF, -`2016`, -`2017`) %>%      #drop columns
+  filter(!is.na(state)) %>%   #safer way to remove text line at bottom of state column
+  mutate_at(vars("2000":"2015"), as.numeric) 
+
+meat_prod_Astates_long <- meat_prod_Astates %>%
+   gather(key = year, value = meat_kg, -state) %>%
+   mutate_at(vars(year), as.integer) %>%
+   mutate(meat_gg = meat_kg * 0.000001) %>%  #convert from kg to gg
+   select(-meat_kg)
+
+##DAIRY
+dairy_prod_Amunis <- dairy_prod_Amunis_Data %>%
+  rename(muniID = `IBGE CODE`) %>%
+  filter(!is.na(muniID)) %>%   #safer way to remove text line in muniID
+  mutate(state = substr(muniID, 1, 2)) %>%     #extract the muniID
+  mutate_at(vars("2000":"2015"), as.numeric) %>%  #convert values to numeric
+  select(-muniID, -Municipality)   #drop unwanted columns
+
+dairy_prod_Astates <- dairy_prod_Amunis %>%
+  group_by(state) %>%
+  mutate_all(funs(. * 1.03 * 1000)) %>%     #convert from thousand litres to kgs
+  summarise_all(sum, na.rm=T) %>%    #summarise munis to states
+  mutate(state=replace(state, 1:length(Astate_codes$stateid), Astate_codes$state)) #re-label stated ids with state abbrevs
+
+dairy_prod_Astates_long <- dairy_prod_Astates %>%
+  gather(key = year, value = dairy_kg, -state) %>%
+  mutate_at(vars(year), as.integer) %>%
+  mutate(dairy_gg = dairy_kg * 0.000001) %>%  #convert from kg to gg
+  select(-dairy_kg)
+
+
+#MAIZE
+#has the same data strucutre (with some differences in unit conversions - could write function to cover both?) 
+maize_prod_Amunis <- maize_prod_Amunis_Data %>%
+  rename(muniID = `IBGE CODE`) %>%
+  filter(!is.na(muniID)) %>%   #safer way to remove text line in muniID
+  mutate(state = substr(muniID, 1, 2)) %>%     #extract the muniID
+  mutate_at(vars("2000":"2015"), as.numeric) %>%  #convert values to numeric
+  select(-muniID, -Municipality)   #drop unwanted columns
+
+maize_prod_Astates <- maize_prod_Amunis %>%
+  group_by(state) %>%
+  summarise_all(sum, na.rm=T) %>%    #summarise munis to states
+  mutate(state=replace(state, 1:length(Astate_codes$stateid), Astate_codes$state)) #re-label stated ids with state abbrevs
+
+maize_prod_Astates_long <- maize_prod_Astates %>%
+  gather(key = year, value = maize_kg, -state) %>%
+  mutate_at(vars(year), as.integer) %>%
+  mutate(maize_gg = maize_kg * 0.001) %>%  #convert from tons to gg
+  select(-maize_kg)
+
+##SOY
+
+soy_prod_Amunis <- soy_prod_Amunis_Data %>%
+  rename(muniID = `IBGE CODE`) %>%
+  filter(!is.na(muniID)) %>%   #safer way to remove text line in muniID
+  mutate(state = substr(muniID, 1, 2)) %>%     #extract the muniID
+  mutate_at(vars("2000":"2015"), as.numeric) %>%  #convert values to numeric
+  select(-muniID, -Municipality)   #drop unwanted columns
+
+soy_prod_Astates <- soy_prod_Amunis %>%
+  group_by(state) %>%
+  summarise_all(sum, na.rm=T) %>%    #summarise munis to states
+  mutate(state=replace(state, 1:length(Astate_codes$stateid), Astate_codes$state)) #re-label stated ids with state abbrevs
+
+soy_prod_Astates_long <- soy_prod_Astates %>%
+  gather(key = year, value = soy_kg, -state) %>%
+  mutate_at(vars(year), as.integer) %>%
+  mutate(soy_gg = soy_kg * 0.001) %>%  #convert from tons to gg
+  select(-soy_kg)
+
+prod_state_year <- left_join(meat_prod_Astates_long, dairy_prod_Astates_long, by = c("year", "state"))
+
+prod_state_year <- left_join(prod_state_year, maize_prod_Astates_long, by = c("year", "state"))
+
+prod_state_year <- left_join(prod_state_year, soy_prod_Astates_long, by = c("year", "state"))
+
+#add focal states indicator
+prod_state_year <- prod_state_year %>%
+  mutate(simulated = state %in% Fstate_abbrev) 
+
+psy_long <- prod_state_year %>%
+  gather(key = commodity, value = gg, -state, -year, -simulated)
+
+psimy_long <- psy_long %>%
+  group_by(simulated, year, commodity) %>%
+  summarise(sumsim = sum(gg, na.rm=T))
+
+```
+
+Soy intensity = 20;		
+Maize intensity = 30;
+Milk intensity = 2.5
+Meat intensity = 0.275;
+		
+
+```{r warning=F, message=F}
+
+psimy_long_sim <- psimy_long %>% 
+  filter(simulated == "TRUE") 
+
+psimy_long_sim %>% 
+  ggplot(aes(x = year, y = sumsim, fill = commodity)) + 
+  geom_bar(stat = "identity", colour="white") +
+  scale_y_continuous(name = "Production (gg)", labels = scales::comma) +
+  #facet_grid(.~state) +
+  ggtitle("Production Data")
+
+
+psimy_long_sim  <- psimy_long_sim %>%
+  mutate(cells = if_else(commodity == "dairy_gg", sumsim / 2.5, 
+      if_else(commodity == "maize_gg", sumsim / 30,
+      if_else(commodity == "meat_gg", sumsim / 0.275, sumsim / 20)
+      )))
+
+psimy_long_sim %>% 
+  ggplot(aes(x = year, y = cells, fill = commodity)) + 
+  geom_bar(stat = "identity", colour="white") +
+  scale_y_continuous(name = "Production (cells)", labels = scales::comma) +
+  #facet_grid(.~state) +
+  ggtitle("Production Data")
+
+
+#psimy_wide_sim  <- psimy_long_sim %>%
+#  spread(commodity, cells,)      
+
+```
+
+```{r warning=F, message=F}
+c <- lc_cells_long_brazil %>% 
+  filter(LC == "Agri" | LC == "Pasture") %>%
+  ggplot(aes(x = year, y = cells, fill = LC)) + 
+  geom_bar(stat = "identity", colour="white") +
+  scale_y_continuous(name = "Cells", labels = scales::comma) +
+  #facet_grid(.~state) +
+  ggtitle("Land Cover Data")
+print(c)
+```
