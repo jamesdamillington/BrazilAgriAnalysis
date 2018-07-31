@@ -275,18 +275,32 @@ psimy_long_sim %>%
   ggtitle("Production Data")
 
 
-#psimy_wide_sim  <- psimy_long_sim %>%
-#  spread(commodity, cells,)      
+psimy_wide_sim  <- psimy_long_sim %>%
+  select(-sumsim) %>%
+  spread(commodity, cells) %>%
+  mutate(Agri = maize_gg + soy_gg, Pasture = dairy_gg + meat_gg)
+
+lcsim_long_sim <- psimy_wide_sim %>%
+  select(year, Agri, Pasture) %>%
+  gather(key = LC, value = cells, -year, -simulated) 
 
 ```
 
 ```{r warning=F, message=F}
-c <- lc_cells_long_brazil %>% 
+
+lcsim_long_sim %>% 
+  ggplot(aes(x = year, y = cells, fill = LC)) + 
+  geom_bar(stat = "identity", colour="white") +
+  scale_y_continuous(name = "Cells", labels = scales::comma) +
+  #facet_grid(.~state) +
+  ggtitle("Production Data")
+
+lc_cells_long_brazil %>% 
   filter(LC == "Agri" | LC == "Pasture") %>%
   ggplot(aes(x = year, y = cells, fill = LC)) + 
   geom_bar(stat = "identity", colour="white") +
   scale_y_continuous(name = "Cells", labels = scales::comma) +
   #facet_grid(.~state) +
   ggtitle("Land Cover Data")
-print(c)
+
 ```
