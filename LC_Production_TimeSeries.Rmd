@@ -165,7 +165,7 @@ dairy_prod_Amunis <- dairy_prod_Amunis_Data %>%
   filter(!is.na(muniID)) %>%   #safer way to remove text line in muniID
   mutate(state = substr(muniID, 1, 2)) %>%     #extract the muniID
   mutate_at(vars("2000":"2015"), as.numeric) %>%  #convert values to numeric
-  select(-muniID, -Municipality)   #drop unwanted columns
+  select(-Municipality)   #drop unwanted columns
 
 dairy_prod_Astates <- dairy_prod_Amunis %>%
   group_by(state) %>%
@@ -174,10 +174,10 @@ dairy_prod_Astates <- dairy_prod_Amunis %>%
   mutate(state=replace(state, 1:length(Astate_codes$stateid), Astate_codes$state)) #re-label stated ids with state abbrevs
 
 dairy_prod_Astates_long <- dairy_prod_Astates %>%
-  gather(key = year, value = dairy_kg, -state) %>%
+  gather(key = year, value = dairy_kg, -state, -muniID) %>%
   mutate_at(vars(year), as.integer) %>%
   mutate(dairy_gg = dairy_kg * 0.000001) %>%  #convert from kg to gg
-  select(-dairy_kg)
+  select(-dairy_kg, -muniID)
 
 
 #MAIZE
@@ -187,7 +187,7 @@ maize_prod_Amunis <- maize_prod_Amunis_Data %>%
   filter(!is.na(muniID)) %>%   #safer way to remove text line in muniID
   mutate(state = substr(muniID, 1, 2)) %>%     #extract the muniID
   mutate_at(vars("2000":"2015"), as.numeric) %>%  #convert values to numeric
-  select(-muniID, -Municipality)   #drop unwanted columns
+  select(-Municipality)   #drop unwanted columns
 
 maize_prod_Astates <- maize_prod_Amunis %>%
   group_by(state) %>%
@@ -195,10 +195,10 @@ maize_prod_Astates <- maize_prod_Amunis %>%
   mutate(state=replace(state, 1:length(Astate_codes$stateid), Astate_codes$state)) #re-label stated ids with state abbrevs
 
 maize_prod_Astates_long <- maize_prod_Astates %>%
-  gather(key = year, value = maize_kg, -state) %>%
+  gather(key = year, value = maize_kg, -state, -muniID) %>%
   mutate_at(vars(year), as.integer) %>%
   mutate(maize_gg = maize_kg * 0.001) %>%  #convert from tons to gg
-  select(-maize_kg)
+  select(-maize_kg, -muniID)
 
 ##SOY
 
@@ -207,7 +207,7 @@ soy_prod_Amunis <- soy_prod_Amunis_Data %>%
   filter(!is.na(muniID)) %>%   #safer way to remove text line in muniID
   mutate(state = substr(muniID, 1, 2)) %>%     #extract the muniID
   mutate_at(vars("2000":"2015"), as.numeric) %>%  #convert values to numeric
-  select(-muniID, -Municipality)   #drop unwanted columns
+  select(-Municipality)   #drop unwanted columns
 
 soy_prod_Astates <- soy_prod_Amunis %>%
   group_by(state) %>%
@@ -215,10 +215,10 @@ soy_prod_Astates <- soy_prod_Amunis %>%
   mutate(state=replace(state, 1:length(Astate_codes$stateid), Astate_codes$state)) #re-label stated ids with state abbrevs
 
 soy_prod_Astates_long <- soy_prod_Astates %>%
-  gather(key = year, value = soy_kg, -state) %>%
+  gather(key = year, value = soy_kg, -state, -muniID) %>%
   mutate_at(vars(year), as.integer) %>%
   mutate(soy_gg = soy_kg * 0.001) %>%  #convert from tons to gg
-  select(-soy_kg)
+  select(-soy_kg, -muniID)
 
 prod_state_year <- left_join(meat_prod_Astates_long, dairy_prod_Astates_long, by = c("year", "state"))
 
@@ -429,4 +429,109 @@ So why have pasture yields increased through time? Or has it been grassland that
 
 
 
+#Distributions
+What is the distribution of production (Munis) for each commodity? Where is the median? Examining these will help to understand what the shapes of production curves should be...
 
+
+Meat
+```{r}
+
+#d <- dairy_prod_Amunis %>% gather(key = year, value = dairy, -muniID, -state)
+
+mt <- meat_prod_Astates_long %>% 
+  filter(!is.na(meat_gg)) %>%
+  group_by(year) %>% 
+  summarise(mx = max(meat_gg), md = median(meat_gg), mn = mean(meat_gg), sd = sd(meat_gg))  
+
+mt  
+
+meat_prod_Astates_long %>% 
+  filter(meat_gg > 0) %>%
+  select(-state) %>%
+  ggplot(aes(x = meat_gg, colour = year)) +
+  geom_freqpoly(binwidth = 100)
+
+meat_prod_Astates_long %>% 
+  filter(meat_gg > 0) %>%
+  ggplot(aes(x = meat_gg, colour = year)) +
+  stat_ecdf()
+
+
+```
+
+Dairy
+```{r}
+
+d <- dairy_prod_Amunis %>% gather(key = year, value = dairy, -muniID, -state)
+
+dt <- d %>% 
+  filter(!is.na(dairy)) %>%
+  group_by(year) %>% 
+  summarise(mx = max(dairy), md = median(dairy), mn = mean(dairy), sd = sd(dairy), md_scaled = round( median(dairy) / max(dairy), 3), mn_scaled = round(mean(dairy) / max(dairy),3) )  
+
+dt  
+
+d %>% 
+  filter(dairy < 20000) %>%
+  ggplot(aes(x = dairy, colour = year)) +
+  geom_freqpoly(binwidth = 1000)
+
+d %>% 
+  filter(dairy < 20000) %>%
+  ggplot(aes(x = dairy, colour = year)) +
+  stat_ecdf()
+
+
+```
+
+
+Soy
+```{r}
+
+d <- soy_prod_Amunis %>% gather(key = year, value = soy, -muniID, -state)
+
+dt <- d %>% 
+  filter(!is.na(soy)) %>%
+  group_by(year) %>% 
+  summarise(mx = max(soy), md = median(soy), mn = mean(soy), sd = sd(soy))  
+
+dt  
+
+d %>% 
+  filter(soy < 1000000) %>%
+  ggplot(aes(x = soy, colour = year)) +
+  geom_freqpoly(binwidth = 10000)
+
+d %>% 
+  filter(soy < 1000000) %>%
+  ggplot(aes(x = soy, colour = year)) +
+  stat_ecdf()
+
+
+```
+
+
+Maize
+```{r}
+
+ma <- maize_prod_Amunis %>% gather(key = year, value = maize, -muniID, -state)
+
+mat <- ma %>% 
+  filter(!is.na(maize)) %>%
+  group_by(year) %>% 
+  summarise(mx = max(maize), md = median(maize), mn = mean(maize), sd = sd(maize))  
+
+mat  
+
+ma %>% 
+  filter(maize < 100000) %>%
+  ggplot(aes(x = maize, colour = year)) +
+  geom_freqpoly(binwidth = 1000)
+
+ma %>% 
+  filter(maize < 100000) %>%
+  ggplot(aes(x = maize, colour = year)) +
+  stat_ecdf()
+
+
+```
