@@ -1,0 +1,52 @@
+---
+title: "Observed Map Analysis - BrazilAgriAnalysis"
+author: "James D.A. Millington"
+date: "August 2018"
+output: 
+  html_document: 
+    keep_md: yes
+    code_folding: hide
+    df_print: paged
+---
+
+Examine error matrix cross-tabulations of observed maps 
+
+And Maps themselves
+
+```{r results='hide', warning=F, message=F}
+
+library(tidyverse)
+library(caret)   #for confusionMatrix
+library(diffeR)  #for map comparison
+library(gridExtra)  #for printing tables to pdf
+library(grid)
+
+```
+
+
+```{r results='hide', warning=F, message=F}
+input_path <- "C:/Users/k1076631/Google Drive/Shared/Crafty Telecoupling/Data/"
+classification <- "PastureB"
+
+data_yrs <- seq(2000, 2002, 1)
+
+for(yr in data_yrs){
+
+  #create a stack of rasters
+  
+  inname <- paste0(input_path,"LandCover/MapBiomas23/ClassificationComparison/ASCII/brazillc_",yr,"_",classification,".asc")
+
+  lc <- raster(inname)
+  
+  #use crosstabmfrom diffeR to compare rasters
+  
+  cfm <- confusionMatrix(filter(cDat, Year == yr)$ModMode,filter(cDat, Year == yr)$ObsMode)
+
+  xmat <- as.matrix(cfm, what = "xtabs")
+  xtab <- as.table(cfm, what = "xtabs")
+
+  colnames(xtab) <- LCnames
+  rownames(xtab) <- LCnames
+  
+}
+```
