@@ -19,7 +19,103 @@ library(tidyverse)
 library(caret)   #for confusionMatrix
 library(diffeR)  #for map comparison
 library(knitr)
+library(raster)
+library(rasterVis)
+library(gridExtra)
 
+
+####FUNCTIONS
+nat2pas <- function(x,y) { x == 1 & y == 5 }
+pas2nat <- function(x,y) { x == 5 & y == 1 }
+
+pas2oag <- function(x,y) { x == 5 & y == 2 }
+oag2pas <- function(x,y) { x == 2 & y == 5 }
+
+nat2oag <- function(x,y) { x == 1 & y == 2 }
+oag2nat <- function(x,y) { x == 2 & y == 1 }
+
+ag2oag <- function(x,y) { x == 3 & y == 2 }
+oag2ag <- function(x,y) { x == 2 & y == 3 }
+
+
+
+binRatify <- function(ras){
+  
+  ras <- ratify(ras)
+  rat <- levels(ras)[[1]]
+  rat$code <- c("No Change","Change")
+  levels(ras) <- rat
+  
+  return(ras)
+}
+
+luRatify <- function(LU) {
+  
+    #add categories for later plotting etc. (see https://stackoverflow.com/a/37214431)
+  LU <- ratify(LU)     #tell R that the map raster is categorical 
+  rat <- levels(LU)[[1]]    #apply the levels (i.e. categories) 
+
+  uLU <- unique(LU) 
+
+  LUcols <- c()
+  LUlabs <- c()
+  
+  if(1 %in% uLU) { 
+    LUcols <- c(LUcols, 'forestgreen') 
+    LUlabs <- c(LUlabs, 'Nat')  }
+  if(2 %in% uLU) { 
+    LUcols <- c(LUcols, 'darkcyan') 
+    LUlabs <- c(LUlabs, 'OAg') }
+  if(3 %in% uLU) { 
+    LUcols <- c(LUcols, 'wheat2') 
+    LUlabs <- c(LUlabs, 'Ag') }
+  if(4 %in% uLU) { 
+    LUcols <- c(LUcols, 'black') 
+    LUlabs <- c(LUlabs, 'Oth') }
+  if(5 %in% uLU) { 
+    LUcols <- c(LUcols, 'orange2') 
+    LUlabs <- c(LUlabs, 'Pas') }
+  
+  rat$LandUse <- LUlabs  
+  levels(LU) <- rat 
+
+}
+  
+
+LUlevelplot <- function(LU) {
+  
+  #add categories for later plotting etc. (see https://stackoverflow.com/a/37214431)
+  LU <- ratify(LU)     #tell R that the map raster is categorical 
+  rat <- levels(LU)[[1]]    #apply the levels (i.e. categories) 
+
+  uLU <- unique(LU) 
+
+  LUcols <- c()
+  LUlabs <- c()
+  
+  if(1 %in% uLU) { 
+    LUcols <- c(LUcols, 'forestgreen') 
+    LUlabs <- c(LUlabs, 'Nat')  }
+  if(2 %in% uLU) { 
+    LUcols <- c(LUcols, 'darkcyan') 
+    LUlabs <- c(LUlabs, 'OAg') }
+  if(3 %in% uLU) { 
+    LUcols <- c(LUcols, 'wheat2') 
+    LUlabs <- c(LUlabs, 'Ag') }
+  if(4 %in% uLU) { 
+    LUcols <- c(LUcols, 'black') 
+    LUlabs <- c(LUlabs, 'Oth') }
+  if(5 %in% uLU) { 
+    LUcols <- c(LUcols, 'orange2') 
+    LUlabs <- c(LUlabs, 'Pas') }
+  
+  rat$LandUse <- LUlabs  
+  levels(LU) <- rat 
+  
+  p <- levelplot(LU, att = "LandUse", col.regions=LUcols, scales=list(draw=FALSE),main = paste0("Obs LU ",year))  
+
+  return(p)
+}
 
 ```
 
@@ -28,7 +124,7 @@ library(knitr)
 input_path <- "C:/Users/k1076631/Google Drive/Shared/Crafty Telecoupling/Data/"
 classification <- "PastureB"
 
-data_yrs <- seq(2000, 2015, 1)
+data_yrs <- seq(2000, 2003, 1)
 
 for(i in seq_along(data_yrs)){
 
@@ -36,12 +132,24 @@ for(i in seq_along(data_yrs)){
   
   inname <- paste0(input_path,"LandCover/MapBiomas23/ClassificationComparison/ASCII/brazillc_",data_yrs[i],"_",classification,".asc")
 
+  
   lc <- raster(inname)
   
   if(i == 1) { s <- stack(lc) }
   else { s <- stack(s, lc) }
   
 }
+
+#mask to study area
+munis.r <- raster(paste0(input_path,"LandCover/MapBiomas23/ClassificationComparison/sim10_BRmunis_latlon_5km_2018-04-27.asc"))
+
+s <- mask(x=s, mask=munis.r)  #JM edited munis.r  
+s <- trim(s, padding=2)
+
+#as.factor(s)
+
+#luRatify(s)
+
 ```
 
 ```{r results="asis"}
@@ -49,9 +157,12 @@ mat_yrs <- head(data_yrs, -1) #drop last element of the list
 
 LCnames <- c("Nat", "OtherAgri", "Agri", "Other", "Pasture")  #used to label error matrix in loop below
 
-
+comparisons <- c(nat2pas, pas2nat, pas2oag, oag2pas, nat2oag, oag2nat, ag2oag, oag2ag) 
+comparisons_n <- c("nat2pas", "pas2nat", "pas2oag", "oag2pas", "nat2oag", "oag2nat", "ag2oag", "oag2ag")
+  
 for(i in seq_along(mat_yrs)){
   
+  i <- 1
   
   ts <- stack(s[[i]], s[[i+1]])
   plot(ts)
@@ -63,8 +174,29 @@ for(i in seq_along(mat_yrs)){
   colnames(xtab) <- LCnames
   rownames(xtab) <- LCnames
   cat("  \n")
-  print(kable(xtab, format="html"))
+  print(kable(xtab))
   cat("  \n")
+  
+  pl <- list()  #this will hold the plots for the all map for this year
+
+  for(j in seq_along(comparisons)){
+    
+    np <- raster::overlay(x=ts, fun=comparisons[[j]])
+    np <- binRatify(np)
+    #create the plot
+    p <- levelplot(np,
+      contour=F, 
+      margin=F,
+      colorkey=F,
+      scales=list(draw=FALSE),
+      col.regions= c("lightgray", "red"),
+      main = comparisons_n[j])
+  
+    #add it to the list
+    pl[[j]] <- p    #+1 because LU is in first slot
+  }
+  
+  print(marrangeGrob(pl, nrow = 2, ncol = 4, top = paste0(data_yrs[i],"-",data_yrs[i+1])))
 
 }
 
