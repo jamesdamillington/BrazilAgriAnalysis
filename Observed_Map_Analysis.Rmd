@@ -9,9 +9,8 @@ output:
     df_print: paged
 ---
 
-Examine error matrix cross-tabulations of observed maps 
+## Examine differences between pairs of raster maps
 
-And Maps themselves
 
 ```{r results='hide', warning=F, message=F}
 
@@ -49,40 +48,10 @@ binRatify <- function(ras){
   return(ras)
 }
 
-luRatify <- function(LU) {
-  
-    #add categories for later plotting etc. (see https://stackoverflow.com/a/37214431)
-  LU <- ratify(LU)     #tell R that the map raster is categorical 
-  rat <- levels(LU)[[1]]    #apply the levels (i.e. categories) 
 
-  uLU <- unique(LU) 
 
-  LUcols <- c()
-  LUlabs <- c()
+makeObsLUmap <- function(LU, year) {
   
-  if(1 %in% uLU) { 
-    LUcols <- c(LUcols, 'forestgreen') 
-    LUlabs <- c(LUlabs, 'Nat')  }
-  if(2 %in% uLU) { 
-    LUcols <- c(LUcols, 'darkcyan') 
-    LUlabs <- c(LUlabs, 'OAg') }
-  if(3 %in% uLU) { 
-    LUcols <- c(LUcols, 'wheat2') 
-    LUlabs <- c(LUlabs, 'Ag') }
-  if(4 %in% uLU) { 
-    LUcols <- c(LUcols, 'black') 
-    LUlabs <- c(LUlabs, 'Oth') }
-  if(5 %in% uLU) { 
-    LUcols <- c(LUcols, 'orange2') 
-    LUlabs <- c(LUlabs, 'Pas') }
-  
-  rat$LandUse <- LUlabs  
-  levels(LU) <- rat 
-
-}
-  
-
-LUlevelplot <- function(LU) {
   
   #add categories for later plotting etc. (see https://stackoverflow.com/a/37214431)
   LU <- ratify(LU)     #tell R that the map raster is categorical 
@@ -112,7 +81,12 @@ LUlevelplot <- function(LU) {
   rat$LandUse <- LUlabs  
   levels(LU) <- rat 
   
-  p <- levelplot(LU, att = "LandUse", col.regions=LUcols, scales=list(draw=FALSE),main = paste0("Obs LU ",year))  
+  p <- levelplot(LU, att = "LandUse", col.regions=LUcols, main = paste0(year),
+      par.settings = list(
+        layout.heights = list(top.padding = 0, bottom.padding = 0),
+        layout.widths = list(left.padding = 0, right.padding = 0) 
+        )
+      )  
 
   return(p)
 }
@@ -124,7 +98,7 @@ LUlevelplot <- function(LU) {
 input_path <- "C:/Users/k1076631/Google Drive/Shared/Crafty Telecoupling/Data/"
 classification <- "PastureB"
 
-data_yrs <- seq(2000, 2003, 1)
+data_yrs <- seq(2000, 2015, 1)
 
 for(i in seq_along(data_yrs)){
 
@@ -134,6 +108,7 @@ for(i in seq_along(data_yrs)){
 
   
   lc <- raster(inname)
+  
   
   if(i == 1) { s <- stack(lc) }
   else { s <- stack(s, lc) }
@@ -162,14 +137,15 @@ comparisons_n <- c("nat2pas", "pas2nat", "pas2oag", "oag2pas", "nat2oag", "oag2n
   
 for(i in seq_along(mat_yrs)){
   
-  i <- 1
+  #i <- 1 #for testing
   
-  ts <- stack(s[[i]], s[[i+1]])
-  plot(ts)
+  lul <- list()  #this will hold the plots for the LU map for this year
+  lul[[1]] <- makeObsLUmap(s[[i]], data_yrs[i])
+  lul[[2]] <- makeObsLUmap(s[[i+1]], data_yrs[i+1])
   
-  cat("  \n","  \n","Crosstab ",data_yrs[i],"-",data_yrs[i+1],"  \n") 
 
-  #can render table in html better?
+  #output the crosstab  
+  cat("  \n","  \n","Crosstab ",data_yrs[i],"-",data_yrs[i+1],"  \n") 
   xtab <- crosstabm(s[[i]], s[[i+1]])
   colnames(xtab) <- LCnames
   rownames(xtab) <- LCnames
@@ -178,11 +154,13 @@ for(i in seq_along(mat_yrs)){
   cat("  \n")
   
   pl <- list()  #this will hold the plots for the all map for this year
+  ts <- stack(s[[i]], s[[i+1]]) #stack used when creating difference maps
 
   for(j in seq_along(comparisons)){
     
     np <- raster::overlay(x=ts, fun=comparisons[[j]])
     np <- binRatify(np)
+    
     #create the plot
     p <- levelplot(np,
       contour=F, 
@@ -190,12 +168,19 @@ for(i in seq_along(mat_yrs)){
       colorkey=F,
       scales=list(draw=FALSE),
       col.regions= c("lightgray", "red"),
-      main = comparisons_n[j])
+      main = comparisons_n[j],
+      par.settings = list(
+        layout.heights = list(top.padding = 0, bottom.padding = 0),
+        layout.widths = list(left.padding = 0, right.padding = 0) 
+        )
+      )
   
     #add it to the list
-    pl[[j]] <- p    #+1 because LU is in first slot
+    pl[[j]] <- p   
   }
   
+  
+  print(marrangeGrob(lul, nrow = 1, ncol = 2, top = paste0("Observed Land Use")))
   print(marrangeGrob(pl, nrow = 2, ncol = 4, top = paste0(data_yrs[i],"-",data_yrs[i+1])))
 
 }
