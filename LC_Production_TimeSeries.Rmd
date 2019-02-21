@@ -409,9 +409,9 @@ Pasture has a poor relationship because production is relatively poor in earlier
 ```{r}
 
 p <- joined %>%
-  mutate(prod_cells50 = prod_cells / 0.4) %>%
+  mutate(prod_cells40 = prod_cells / 0.4) %>%
   filter(LC == "Agri") %>%
-  ggplot(aes(x = prod_cells50, y = lc_cells, colour=year, shape=LC)) + 
+  ggplot(aes(x = prod_cells40, y = lc_cells, colour=year, shape=LC)) + 
   geom_point() +
   geom_abline(intercept = 0, slope = 1, color = "black") +
   ggtitle("Imperfect Conversion (40%)")
@@ -428,5 +428,39 @@ Well, yes we can see this from figures above... gg of both soy and maize have in
 So why have pasture yields increased through time? Or has it been grassland that has been converted to pasture? This wouldn't be picked up by our land cover maps data.  Could we check this issue by comparing land cover data from maps and pasture area from IBGE? We have planted/harvested data for soy and maize (which we could compare to LC maps) but not for dairy and meat...
 
 
+2019-02-21
+Picking this up again, to try to understand how to convert above production info into CRAFTY demand. 
 
+First, let's calculate the 'production efficiency' through time. i.e. divide expected cells (given 'perfect' yield) by observed cells. This is how close to 'perfect' yield we see through time. 
 
+```{r}
+
+joined <- joined %>%
+  mutate(prod_efficiency = prod_cells / lc_cells) 
+
+p <- joined %>%
+  ggplot(aes(x = year, y = prod_efficiency, colour=LC)) +
+  geom_line()
+
+print(p)
+```
+
+Now divide (perfect) production cells by this efficiency to get the number of cells we would expect to see. 
+
+```{r}
+
+joined <- joined %>%
+  mutate(ef_cells = prod_cells / prod_efficiency)
+
+p <- joined %>%
+  ggplot(aes(x = year, y = ef_cells, colour=LC)) +
+  geom_line()
+
+print(p)
+   
+
+```
+
+This still underestimates Agri and Pasture that we see in the real world. 
+
+But why would we expect Supply = Demand? Producers can only respond to demand so quickly and supply may never equal demand... really demand is shown through price data. Should we be looking at Price data to estimate demand? 
