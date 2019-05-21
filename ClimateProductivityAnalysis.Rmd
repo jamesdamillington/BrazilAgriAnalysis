@@ -1,0 +1,1365 @@
+---
+title: "Climate vs Productivity Analysis - BrazilAgriAnalysis"
+author: "James D.A. Millington"
+date: "May 2019"
+output:
+  html_document:
+    code_folding: hide
+    df_print: paged
+    keep_md: yes
+  pdf_document: default
+---
+
+```{r results='hide', warning=F, message=F}
+
+rm(list=ls())
+library(tidyverse)
+library(readxl)
+
+
+label_long <- function(data) {
+
+  data <- data %>% 
+    mutate(StateNM = if_else(State == 17, "TO", 
+       if_else(State == 29, "BA",
+       if_else(State == 31, "MG",
+       if_else(State == 35, "SP",
+       if_else(State == 41, "PR",
+       if_else(State == 42, "SC",
+       if_else(State == 43, "RS", 
+       if_else(State == 50, "MS",
+       if_else(State == 51, "MT",
+       if_else(State == 52, "GO", NULL
+       ))))))))))
+     ) %>%
+    
+    #regions as discussed with Ramon 2019-05-07
+    mutate(RegionNM = if_else(State == 17, "N", 
+       if_else(State == 29, "N",
+       if_else(State == 31, "E",
+       if_else(State == 35, "E",
+       if_else(State == 41, "S",
+       if_else(State == 42, "S",
+       if_else(State == 43, "S", 
+       if_else(State == 50, "W",
+       if_else(State == 51, "W",
+       if_else(State == 52, "W", NULL
+       ))))))))))
+     ) %>%
+  drop_na()
+  
+  return(data)
+  
+}
+
+```
+
+Production data are from IBGE [MORE DETAILS]
+
+Climate data are from cruts [MORE DETAILS] creates using agricultureMap.r and summariseRasters.r
+
+```{r warning=F, message=F}
+##Load Production Data
+soy <- readr::read_csv("ProductionData/soybean_Crop.csv",col_types=cols(.default=col_integer()), na="NA")
+maize1 <- readr::read_csv("ProductionData/maize_first.csv",col_types=cols(.default=col_integer()), na="NA")
+maize2 <- readr::read_csv("ProductionData/maize_second.csv",col_types=cols(.default=col_integer()), na="NA")
+
+#go long
+soy_long <- soy %>%
+  gather(key = year, value = soy, -CODE)
+
+maize1_long <- maize1 %>%
+  gather(key = year, value = maize1, -CODE)
+
+maize2_long <- maize2 %>%
+  gather(key = year, value = maize2, -CODE)
+
+
+##Load Climate data
+CLmeans <- readr::read_csv("ClimateData/class-A-SH/ClimLim_MuniMeans.csv")
+ACmeans <- readr::read_csv("ClimateData/class-A-SH/AgriCap_MuniMeans.csv")
+DEFcmeans <- readr::read_csv("ClimateData/class-A-SH/countDEFmonths_MuniMeans.csv")
+DEFmmeans <- readr::read_csv("ClimateData/class-A-SH/meanAnnualDEF_MuniMeans.csv")
+DImeans <- readr::read_csv("ClimateData/class-A-SH/MeanAnnualDI_MuniMeans.csv")
+
+#clean, go long
+CLmeans_long <- CLmeans %>%
+  dplyr::select(-NM_MUNICIP, -CD_GEOCMUn, -NM_ESTADO, -NM_REGIAO, -CD_GEOCUF) %>%
+  gather(key = year, value = meanCL, -State, -CD_GEOCMU)
+  
+ACmeans_long <- ACmeans %>%
+  dplyr::select(-NM_MUNICIP, -CD_GEOCMUn, -NM_ESTADO, -NM_REGIAO, -CD_GEOCUF) %>%
+  gather(key = year, value = meanAC, -State, -CD_GEOCMU)
+
+DEFcmeans_long <- DEFcmeans %>%
+  dplyr::select(-NM_MUNICIP, -CD_GEOCMUn, -NM_ESTADO, -NM_REGIAO, -CD_GEOCUF) %>%
+  gather(key = year, value = meanDEFc, -State, -CD_GEOCMU)
+
+DEFmmeans_long <- DEFmmeans %>%
+  dplyr::select(-NM_MUNICIP, -CD_GEOCMUn, -NM_ESTADO, -NM_REGIAO, -CD_GEOCUF) %>%
+  gather(key = year, value = meanDEFm, -State, -CD_GEOCMU)
+
+DImeans_long <- DImeans %>%
+  dplyr::select(-NM_MUNICIP, -CD_GEOCMUn, -NM_ESTADO, -NM_REGIAO, -CD_GEOCUF) %>%
+  gather(key = year, value = meanDI, -State, -CD_GEOCMU)
+
+
+#join, add labels, go long
+soyCLmeans_l <- label_long(left_join(CLmeans_long, soy_long, by = c("CD_GEOCMU" = "CODE", "year" = "year")))
+
+soyACmeans_l <- label_long(left_join(ACmeans_long, soy_long, by = c("CD_GEOCMU" = "CODE", "year" = "year")))
+
+soyDEFcmeans_l <- label_long(left_join(DEFcmeans_long, soy_long, by = c("CD_GEOCMU" = "CODE", "year" = "year")))
+
+soyDEFmmeans_l <- label_long(left_join(DEFmmeans_long, soy_long, by = c("CD_GEOCMU" = "CODE", "year" = "year")))
+
+soyDImeans_l <- label_long(left_join(DImeans_long, soy_long, by = c("CD_GEOCMU" = "CODE", "year" = "year")))
+
+maize1CLmeans_l <- label_long(left_join(CLmeans_long, maize1_long, by = c("CD_GEOCMU" = "CODE", "year" = "year")))
+
+maize1ACmeans_l <- label_long(left_join(ACmeans_long, maize1_long, by = c("CD_GEOCMU" = "CODE", "year" = "year")))
+
+maize1DEFcmeans_l <- label_long(left_join(DEFcmeans_long, maize1_long, by = c("CD_GEOCMU" = "CODE", "year" = "year")))
+
+maize1DEFmmeans_l <- label_long(left_join(DEFmmeans_long, maize1_long, by = c("CD_GEOCMU" = "CODE", "year" = "year")))
+
+maize1DImeans_l <- label_long(left_join(DImeans_long, maize1_long, by = c("CD_GEOCMU" = "CODE", "year" = "year")))
+
+maize2CLmeans_l <- label_long(left_join(CLmeans_long, maize2_long, by = c("CD_GEOCMU" = "CODE", "year" = "year")))
+
+maize2ACmeans_l <- label_long(left_join(ACmeans_long, maize2_long, by = c("CD_GEOCMU" = "CODE", "year" = "year")))
+
+maize2DEFcmeans_l <- label_long(left_join(DEFcmeans_long, maize2_long, by = c("CD_GEOCMU" = "CODE", "year" = "year")))
+
+maize2DEFmmeans_l <- label_long(left_join(DEFmmeans_long, maize2_long, by = c("CD_GEOCMU" = "CODE", "year" = "year")))
+
+maize2DImeans_l <- label_long(left_join(DImeans_long, maize2_long, by = c("CD_GEOCMU" = "CODE", "year" = "year")))
+```
+
+# Soy
+
+## Climate Limitation
+```{r warning=F, message=F}
+
+muni_sum <- soyCLmeans_l %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(meanSoy = mean(soy),
+            sdSoy   = sd(soy),
+            meanCL = mean(meanCL),
+            sdCL = sd(meanCL) ) %>%
+  ungroup()
+
+state_sum <- muni_sum %>%
+  group_by(StateNM) %>%
+  summarise(meanSoyPeriod = mean(meanSoy),
+    meanCLPeriod = mean(meanCL)) %>%
+  ungroup()
+
+muni_states <- left_join(muni_sum, state_sum)
+
+muni_states <- muni_states %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(diffcSoyPeriod = meanSoy - meanSoyPeriod,
+    diffcCLPeriod= meanCL - meanCLPeriod ) %>%
+  ungroup()
+
+muni_sum <- left_join(muni_sum, muni_states, b = c("year"="year","StateNM"="StateNM","RegionNM"="RegionNM"))
+```
+
+### Time Series
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=year, group=StateNM)) +
+  geom_line(aes(y=meanSoy, colour=StateNM)) +
+  geom_line(aes(y=meanCL*500, colour=StateNM), linetype="longdash") +
+  scale_y_continuous(sec.axis = sec_axis(~./500, name = "Mean Climate Limitation")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("Soy, Climate Limitation") +
+  ylab("Mean Municipality Productivity (k/ha)") + 
+  theme(legend.position = "bottom")
+```
+Dotted line is climate variable
+
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcCLPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  facet_grid(RegionNM~.) + 
+  theme(legend.position = "bottom")
+
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcCLPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  geom_line(aes(y=meanSoy/2000, colour=StateNM)) +
+  scale_y_continuous(sec.axis = sec_axis(~.*2000, name = "Mean Soy")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("Soy, Climate Limitation") +
+  ylab("Clim Lim Diffc") + 
+  theme(legend.position = "bottom")
+
+```
+Differences are from the mean value for the period 2003-2016
+
+### Scatter (points are years)
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=meanCL, y=meanSoy)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+muni_sum %>%
+  ggplot(aes(x=diffcCLPeriod, y=meanSoy)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+```
+
+
+
+## Agricultural Capital
+
+
+```{r warning=F, message=F}
+
+muni_sum <- soyACmeans_l %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(meanSoy = mean(soy),
+            sdSoy   = sd(soy),
+            meanAC = mean(meanAC),
+            sdAC = sd(meanAC)) %>%
+  ungroup()
+  
+state_sum <- muni_sum %>%
+  group_by(StateNM) %>%
+  summarise(meanSoyPeriod = mean(meanSoy),
+    meanACPeriod = mean(meanAC)) %>%
+  ungroup()
+
+muni_states <- left_join(muni_sum, state_sum)
+
+muni_states <- muni_states %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(diffcSoyPeriod = meanSoy - meanSoyPeriod,
+    diffcACPeriod= meanAC - meanACPeriod ) %>%
+  ungroup()
+
+muni_sum <- left_join(muni_sum, muni_states, b = c("year"="year","StateNM"="StateNM","RegionNM"="RegionNM"))
+```
+
+### Time Series
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=year, group=StateNM)) +
+  geom_line(aes(y=meanSoy, colour=StateNM)) +
+  geom_line(aes(y=meanAC*2000, colour=StateNM), linetype="longdash") +
+  scale_y_continuous(sec.axis = sec_axis(~./2000, name = "Mean Agri Captial")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("Soy, Agricultural Captial") +
+  ylab("Mean Municipality Productivity (k/ha)") + 
+  theme(legend.position = "bottom")
+```
+Dotted line is climate variable
+
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcACPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  facet_grid(RegionNM~.) + 
+  theme(legend.position = "bottom")
+ 
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcACPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  geom_line(aes(y=meanSoy/20000, colour=StateNM)) +
+  scale_y_continuous(sec.axis = sec_axis(~.*20000, name = "Mean Soy")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("Soy, Agricultural Captial") +
+  ylab("Agri Cap Diffc") + 
+  theme(legend.position = "bottom")
+```
+Differences are from the mean value for the period 2003-2016
+
+### Scatter (points are years)
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=meanAC, y=meanSoy)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+muni_sum %>%
+  ggplot(aes(x=diffcACPeriod, y=meanSoy)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+```
+
+
+## DEF months count
+```{r warning=F, message=F}
+
+muni_sum <- soyDEFcmeans_l %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(meanSoy = mean(soy),
+            sdSoy   = sd(soy),
+            meanDEFc = mean(meanDEFc),
+            sdDEFc = sd(meanDEFc) ) %>%
+  ungroup()
+
+state_sum <- muni_sum %>%
+  group_by(StateNM) %>%
+  summarise(meanSoyPeriod = mean(meanSoy),
+    meanDEFcPeriod = mean(meanDEFc)) %>%
+  ungroup()
+
+muni_states <- left_join(muni_sum, state_sum)
+
+muni_states <- muni_states %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(diffcSoyPeriod = meanSoy - meanSoyPeriod,
+    diffcDEFcPeriod= meanDEFc - meanDEFcPeriod) %>%
+  ungroup()
+
+muni_sum <- left_join(muni_sum, muni_states, b = c("year"="year","StateNM"="StateNM","RegionNM"="RegionNM"))
+
+```
+
+### Time Series
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=year, group=StateNM)) +
+  geom_line(aes(y=meanSoy, colour=StateNM)) +
+  geom_line(aes(y=meanDEFc*200, colour=StateNM), linetype="longdash") +
+  scale_y_continuous(sec.axis = sec_axis(~./200, name = "Mean DEF count")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("Soy, DEF months count") +
+  ylab("Mean Municipality Productivity (k/ha)") + 
+  theme(legend.position = "bottom")
+```
+Dotted line is climate variable
+
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcDEFcPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  facet_grid(RegionNM~.)  + 
+  theme(legend.position = "bottom")
+
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcDEFcPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  geom_line(aes(y=meanSoy/1000, colour=StateNM)) +
+  scale_y_continuous(sec.axis = sec_axis(~.*1000, name = "Mean Soy")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("Soy, DEF months count") +
+  ylab("DEF months count Diffc") + 
+  theme(legend.position = "bottom")
+
+```
+
+Differences are from the mean value for the period 2003-2016
+
+### Scatter (points are years)
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=meanDEFc, y=meanSoy)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+muni_sum %>%
+  ggplot(aes(x=diffcDEFcPeriod, y=meanSoy)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+```
+
+
+## DEF months mean
+```{r warning=F, message=F}
+
+muni_sum <- soyDEFmmeans_l %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(meanSoy = mean(soy),
+            sdSoy   = sd(soy),
+            meanDEFm = mean(meanDEFm),
+            sdDEFm = sd(meanDEFm) ) %>%
+  ungroup()
+
+state_sum <- muni_sum %>%
+  group_by(StateNM) %>%
+  summarise(meanSoyPeriod = mean(meanSoy),
+    meanDEFmPeriod = mean(meanDEFm)) %>%
+  ungroup()
+
+muni_states <- left_join(muni_sum, state_sum)
+
+muni_states <- muni_states %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(diffcSoyPeriod = meanSoy - meanSoyPeriod,
+    diffcDEFmPeriod= meanDEFm - meanDEFmPeriod) %>%
+  ungroup()
+
+muni_sum <- left_join(muni_sum, muni_states, b = c("year"="year","StateNM"="StateNM","RegionNM"="RegionNM"))
+
+```
+
+### Time Series
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=year, group=StateNM)) +
+  geom_line(aes(y=meanSoy, colour=StateNM)) +
+  geom_line(aes(y=meanDEFm*25, colour=StateNM), linetype="longdash") +
+  scale_y_continuous(sec.axis = sec_axis(~./25, name = "Mean DEF months mean")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("Soy, DEF months mean") +
+  ylab("Mean Municipality Productivity (k/ha)") + 
+  theme(legend.position = "bottom")
+```
+Dotted line is climate variable
+
+```{r warning=F, message=F}
+
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcDEFmPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  facet_grid(RegionNM~.)  + 
+  theme(legend.position = "bottom")
+
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcDEFmPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  geom_line(aes(y=meanSoy/200, colour=StateNM)) +
+  scale_y_continuous(sec.axis = sec_axis(~.*200, name = "Mean Soy")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("Soy, DEF months mean") +
+  ylab("DEF months mean Diffc") + 
+  theme(legend.position = "bottom")
+
+```
+Differences are from the mean value for the period 2003-2016
+
+### Scatter (points are years)
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=meanDEFm, y=meanSoy)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+muni_sum %>%
+  ggplot(aes(x=diffcDEFmPeriod, y=meanSoy)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+```
+
+
+## Dryness Index
+```{r warning=F, message=F}
+
+
+muni_sum <- soyDImeans_l %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(meanSoy = mean(soy),
+            sdSoy   = sd(soy),
+            meanDI = mean(meanDI),
+            sdDI = sd(meanDI) ) %>%
+  ungroup()
+
+state_sum <- muni_sum %>%
+  group_by(StateNM) %>%
+  summarise(meanSoyPeriod = mean(meanSoy),
+    meanDIPeriod = mean(meanDI)) %>%
+  ungroup()
+
+muni_states <- left_join(muni_sum, state_sum)
+
+muni_states <- muni_states %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(
+    diffcSoyPeriod = meanSoy - meanSoyPeriod,
+    diffcDIPeriod= meanDI - meanDIPeriod) %>%
+  ungroup()
+
+muni_sum <- left_join(muni_sum, muni_states, b = c("year"="year","StateNM"="StateNM","RegionNM"="RegionNM"))
+```
+
+### Time Series
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=year, group=StateNM)) +
+  geom_line(aes(y=meanSoy, colour=StateNM)) +
+  geom_line(aes(y=meanDI*40, colour=StateNM), linetype="longdash") +
+  scale_y_continuous(sec.axis = sec_axis(~./40, name = "Mean Dryness Index")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("Soy, Dryness Index") +
+  ylab("Mean Municipality Productivity (k/ha)") + 
+  theme(legend.position = "bottom")
+```
+Dotted line is climate variable
+
+```{r warning=F, message=F}
+
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcDIPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  facet_grid(RegionNM~.)  + 
+  theme(legend.position = "bottom")
+
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcDIPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  geom_line(aes(y=meanSoy/200, colour=StateNM)) +
+  scale_y_continuous(sec.axis = sec_axis(~.*200, name = "Mean Soy")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("Soy, mean DI") +
+  ylab("mean DI Diffc") + 
+  theme(legend.position = "bottom")
+
+
+
+```
+
+Differences are from the mean value for the period 2003-2016
+
+### Scatter (points are years)
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=meanDI, y=meanSoy)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+muni_sum %>%
+  ggplot(aes(x=diffcDIPeriod, y=meanSoy)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+```
+
+
+# Maize1
+
+## Climate Limitation
+```{r warning=F, message=F}
+
+muni_sum <- maize1CLmeans_l %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(meanmaize1 = mean(maize1),
+            sdmaize1   = sd(maize1),
+            meanCL = mean(meanCL),
+            sdCL = sd(meanCL) ) %>%
+  ungroup()
+
+state_sum <- muni_sum %>%
+  group_by(StateNM) %>%
+  summarise(meanmaize1Period = mean(meanmaize1),
+    meanCLPeriod = mean(meanCL)) %>%
+  ungroup()
+
+muni_states <- left_join(muni_sum, state_sum)
+
+muni_states <- muni_states %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(diffcmaize1Period = meanmaize1 - meanmaize1Period,
+    diffcCLPeriod= meanCL - meanCLPeriod ) %>%
+  ungroup()
+
+muni_sum <- left_join(muni_sum, muni_states, b = c("year"="year","StateNM"="StateNM","RegionNM"="RegionNM"))
+```
+
+### Time Series
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=year, group=StateNM)) +
+  geom_line(aes(y=meanmaize1, colour=StateNM)) +
+  geom_line(aes(y=meanCL*500, colour=StateNM), linetype="longdash") +
+  scale_y_continuous(sec.axis = sec_axis(~./500, name = "Mean Climate Limitation")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("maize1, Climate Limitation") +
+  ylab("Mean Municipality Productivity (k/ha)") + 
+  theme(legend.position = "bottom")
+```
+Dotted line is climate variable
+
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcCLPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  facet_grid(RegionNM~.) + 
+  theme(legend.position = "bottom")
+
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcCLPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  geom_line(aes(y=meanmaize1/2000, colour=StateNM)) +
+  scale_y_continuous(sec.axis = sec_axis(~.*2000, name = "Mean maize1")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("maize1, Climate Limitation") +
+  ylab("Clim Lim Diffc") + 
+  theme(legend.position = "bottom")
+
+```
+Differences are from the mean value for the period 2003-2016
+
+### Scatter (points are years)
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=meanCL, y=meanmaize1)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+muni_sum %>%
+  ggplot(aes(x=diffcCLPeriod, y=meanmaize1)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+```
+
+
+
+## Agricultural Capital
+
+
+```{r warning=F, message=F}
+
+muni_sum <- maize1ACmeans_l %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(meanmaize1 = mean(maize1),
+            sdmaize1   = sd(maize1),
+            meanAC = mean(meanAC),
+            sdAC = sd(meanAC)) %>%
+  ungroup()
+  
+state_sum <- muni_sum %>%
+  group_by(StateNM) %>%
+  summarise(meanmaize1Period = mean(meanmaize1),
+    meanACPeriod = mean(meanAC)) %>%
+  ungroup()
+
+muni_states <- left_join(muni_sum, state_sum)
+
+muni_states <- muni_states %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(diffcmaize1Period = meanmaize1 - meanmaize1Period,
+    diffcACPeriod= meanAC - meanACPeriod ) %>%
+  ungroup()
+
+muni_sum <- left_join(muni_sum, muni_states, b = c("year"="year","StateNM"="StateNM","RegionNM"="RegionNM"))
+```
+
+### Time Series
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=year, group=StateNM)) +
+  geom_line(aes(y=meanmaize1, colour=StateNM)) +
+  geom_line(aes(y=meanAC*2000, colour=StateNM), linetype="longdash") +
+  scale_y_continuous(sec.axis = sec_axis(~./2000, name = "Mean Agri Captial")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("maize1, Agricultural Captial") +
+  ylab("Mean Municipality Productivity (k/ha)") + 
+  theme(legend.position = "bottom")
+```
+Dotted line is climate variable
+
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcACPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  facet_grid(RegionNM~.) + 
+  theme(legend.position = "bottom")
+ 
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcACPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  geom_line(aes(y=meanmaize1/20000, colour=StateNM)) +
+  scale_y_continuous(sec.axis = sec_axis(~.*20000, name = "Mean maize1")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("maize1, Agricultural Captial") +
+  ylab("Agri Cap Diffc") + 
+  theme(legend.position = "bottom")
+```
+Differences are from the mean value for the period 2003-2016
+
+### Scatter (points are years)
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=meanAC, y=meanmaize1)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+muni_sum %>%
+  ggplot(aes(x=diffcACPeriod, y=meanmaize1)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+```
+
+
+## DEF months count
+```{r warning=F, message=F}
+
+muni_sum <- maize1DEFcmeans_l %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(meanmaize1 = mean(maize1),
+            sdmaize1   = sd(maize1),
+            meanDEFc = mean(meanDEFc),
+            sdDEFc = sd(meanDEFc) ) %>%
+  ungroup()
+
+state_sum <- muni_sum %>%
+  group_by(StateNM) %>%
+  summarise(meanmaize1Period = mean(meanmaize1),
+    meanDEFcPeriod = mean(meanDEFc)) %>%
+  ungroup()
+
+muni_states <- left_join(muni_sum, state_sum)
+
+muni_states <- muni_states %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(diffcmaize1Period = meanmaize1 - meanmaize1Period,
+    diffcDEFcPeriod= meanDEFc - meanDEFcPeriod) %>%
+  ungroup()
+
+muni_sum <- left_join(muni_sum, muni_states, b = c("year"="year","StateNM"="StateNM","RegionNM"="RegionNM"))
+
+```
+
+### Time Series
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=year, group=StateNM)) +
+  geom_line(aes(y=meanmaize1, colour=StateNM)) +
+  geom_line(aes(y=meanDEFc*200, colour=StateNM), linetype="longdash") +
+  scale_y_continuous(sec.axis = sec_axis(~./200, name = "Mean DEF count")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("maize1, DEF months count") +
+  ylab("Mean Municipality Productivity (k/ha)") + 
+  theme(legend.position = "bottom")
+```
+Dotted line is climate variable
+
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcDEFcPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  facet_grid(RegionNM~.)  + 
+  theme(legend.position = "bottom")
+
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcDEFcPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  geom_line(aes(y=meanmaize1/1000, colour=StateNM)) +
+  scale_y_continuous(sec.axis = sec_axis(~.*1000, name = "Mean maize1")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("maize1, DEF months count") +
+  ylab("DEF months count Diffc") + 
+  theme(legend.position = "bottom")
+
+```
+
+Differences are from the mean value for the period 2003-2016
+
+### Scatter (points are years)
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=meanDEFc, y=meanmaize1)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+muni_sum %>%
+  ggplot(aes(x=diffcDEFcPeriod, y=meanmaize1)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+```
+
+
+## DEF months mean
+```{r warning=F, message=F}
+
+muni_sum <- maize1DEFmmeans_l %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(meanmaize1 = mean(maize1),
+            sdmaize1   = sd(maize1),
+            meanDEFm = mean(meanDEFm),
+            sdDEFm = sd(meanDEFm) ) %>%
+  ungroup()
+
+state_sum <- muni_sum %>%
+  group_by(StateNM) %>%
+  summarise(meanmaize1Period = mean(meanmaize1),
+    meanDEFmPeriod = mean(meanDEFm)) %>%
+  ungroup()
+
+muni_states <- left_join(muni_sum, state_sum)
+
+muni_states <- muni_states %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(diffcmaize1Period = meanmaize1 - meanmaize1Period,
+    diffcDEFmPeriod= meanDEFm - meanDEFmPeriod) %>%
+  ungroup()
+
+muni_sum <- left_join(muni_sum, muni_states, b = c("year"="year","StateNM"="StateNM","RegionNM"="RegionNM"))
+
+```
+
+### Time Series
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=year, group=StateNM)) +
+  geom_line(aes(y=meanmaize1, colour=StateNM)) +
+  geom_line(aes(y=meanDEFm*25, colour=StateNM), linetype="longdash") +
+  scale_y_continuous(sec.axis = sec_axis(~./25, name = "Mean DEF months mean")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("maize1, DEF months mean") +
+  ylab("Mean Municipality Productivity (k/ha)") + 
+  theme(legend.position = "bottom")
+```
+Dotted line is climate variable
+
+```{r warning=F, message=F}
+
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcDEFmPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  facet_grid(RegionNM~.)  + 
+  theme(legend.position = "bottom")
+
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcDEFmPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  geom_line(aes(y=meanmaize1/200, colour=StateNM)) +
+  scale_y_continuous(sec.axis = sec_axis(~.*200, name = "Mean maize1")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("maize1, DEF months mean") +
+  ylab("DEF months mean Diffc") + 
+  theme(legend.position = "bottom")
+
+```
+Differences are from the mean value for the period 2003-2016
+
+### Scatter (points are years)
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=meanDEFm, y=meanmaize1)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+muni_sum %>%
+  ggplot(aes(x=diffcDEFmPeriod, y=meanmaize1)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+```
+
+
+## Dryness Index
+```{r warning=F, message=F}
+
+
+muni_sum <- maize1DImeans_l %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(meanmaize1 = mean(maize1),
+            sdmaize1   = sd(maize1),
+            meanDI = mean(meanDI),
+            sdDI = sd(meanDI) ) %>%
+  ungroup()
+
+state_sum <- muni_sum %>%
+  group_by(StateNM) %>%
+  summarise(meanmaize1Period = mean(meanmaize1),
+    meanDIPeriod = mean(meanDI)) %>%
+  ungroup()
+
+muni_states <- left_join(muni_sum, state_sum)
+
+muni_states <- muni_states %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(
+    diffcmaize1Period = meanmaize1 - meanmaize1Period,
+    diffcDIPeriod= meanDI - meanDIPeriod) %>%
+  ungroup()
+
+muni_sum <- left_join(muni_sum, muni_states, b = c("year"="year","StateNM"="StateNM","RegionNM"="RegionNM"))
+```
+
+### Time Series
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=year, group=StateNM)) +
+  geom_line(aes(y=meanmaize1, colour=StateNM)) +
+  geom_line(aes(y=meanDI*40, colour=StateNM), linetype="longdash") +
+  scale_y_continuous(sec.axis = sec_axis(~./40, name = "Mean Dryness Index")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("maize1, Dryness Index") +
+  ylab("Mean Municipality Productivity (k/ha)") + 
+  theme(legend.position = "bottom")
+```
+Dotted line is climate variable
+
+```{r warning=F, message=F}
+
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcDIPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  facet_grid(RegionNM~.)  + 
+  theme(legend.position = "bottom")
+
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcDIPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  geom_line(aes(y=meanmaize1/200, colour=StateNM)) +
+  scale_y_continuous(sec.axis = sec_axis(~.*200, name = "Mean maize1")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("maize1, mean DI") +
+  ylab("mean DI Diffc") + 
+  theme(legend.position = "bottom")
+
+
+
+```
+
+Differences are from the mean value for the period 2003-2016
+
+### Scatter (points are years)
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=meanDI, y=meanmaize1)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+muni_sum %>%
+  ggplot(aes(x=diffcDIPeriod, y=meanmaize1)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+```
+
+
+# Maize 2
+
+
+## Climate Limitation
+```{r warning=F, message=F}
+
+muni_sum <- maize2CLmeans_l %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(meanmaize2 = mean(maize2),
+            sdmaize2   = sd(maize2),
+            meanCL = mean(meanCL),
+            sdCL = sd(meanCL) ) %>%
+  ungroup()
+
+state_sum <- muni_sum %>%
+  group_by(StateNM) %>%
+  summarise(meanmaize2Period = mean(meanmaize2),
+    meanCLPeriod = mean(meanCL)) %>%
+  ungroup()
+
+muni_states <- left_join(muni_sum, state_sum)
+
+muni_states <- muni_states %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(diffcmaize2Period = meanmaize2 - meanmaize2Period,
+    diffcCLPeriod= meanCL - meanCLPeriod ) %>%
+  ungroup()
+
+muni_sum <- left_join(muni_sum, muni_states, b = c("year"="year","StateNM"="StateNM","RegionNM"="RegionNM"))
+```
+
+### Time Series
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=year, group=StateNM)) +
+  geom_line(aes(y=meanmaize2, colour=StateNM)) +
+  geom_line(aes(y=meanCL*500, colour=StateNM), linetype="longdash") +
+  scale_y_continuous(sec.axis = sec_axis(~./500, name = "Mean Climate Limitation")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("maize2, Climate Limitation") +
+  ylab("Mean Municipality Productivity (k/ha)") + 
+  theme(legend.position = "bottom")
+```
+Dotted line is climate variable
+
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcCLPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  facet_grid(RegionNM~.) + 
+  theme(legend.position = "bottom")
+
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcCLPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  geom_line(aes(y=meanmaize2/2000, colour=StateNM)) +
+  scale_y_continuous(sec.axis = sec_axis(~.*2000, name = "Mean maize2")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("maize2, Climate Limitation") +
+  ylab("Clim Lim Diffc") + 
+  theme(legend.position = "bottom")
+
+```
+Differences are from the mean value for the period 2003-2016
+
+### Scatter (points are years)
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=meanCL, y=meanmaize2)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+muni_sum %>%
+  ggplot(aes(x=diffcCLPeriod, y=meanmaize2)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+```
+
+
+
+## Agricultural Capital
+
+
+```{r warning=F, message=F}
+
+muni_sum <- maize2ACmeans_l %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(meanmaize2 = mean(maize2),
+            sdmaize2   = sd(maize2),
+            meanAC = mean(meanAC),
+            sdAC = sd(meanAC)) %>%
+  ungroup()
+  
+state_sum <- muni_sum %>%
+  group_by(StateNM) %>%
+  summarise(meanmaize2Period = mean(meanmaize2),
+    meanACPeriod = mean(meanAC)) %>%
+  ungroup()
+
+muni_states <- left_join(muni_sum, state_sum)
+
+muni_states <- muni_states %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(diffcmaize2Period = meanmaize2 - meanmaize2Period,
+    diffcACPeriod= meanAC - meanACPeriod ) %>%
+  ungroup()
+
+muni_sum <- left_join(muni_sum, muni_states, b = c("year"="year","StateNM"="StateNM","RegionNM"="RegionNM"))
+```
+
+### Time Series
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=year, group=StateNM)) +
+  geom_line(aes(y=meanmaize2, colour=StateNM)) +
+  geom_line(aes(y=meanAC*2000, colour=StateNM), linetype="longdash") +
+  scale_y_continuous(sec.axis = sec_axis(~./2000, name = "Mean Agri Captial")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("maize2, Agricultural Captial") +
+  ylab("Mean Municipality Productivity (k/ha)") + 
+  theme(legend.position = "bottom")
+```
+Dotted line is climate variable
+
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcACPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  facet_grid(RegionNM~.) + 
+  theme(legend.position = "bottom")
+ 
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcACPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  geom_line(aes(y=meanmaize2/20000, colour=StateNM)) +
+  scale_y_continuous(sec.axis = sec_axis(~.*20000, name = "Mean maize2")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("maize2, Agricultural Captial") +
+  ylab("Agri Cap Diffc") + 
+  theme(legend.position = "bottom")
+```
+Differences are from the mean value for the period 2003-2016
+
+### Scatter (points are years)
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=meanAC, y=meanmaize2)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+muni_sum %>%
+  ggplot(aes(x=diffcACPeriod, y=meanmaize2)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+```
+
+
+## DEF months count
+```{r warning=F, message=F}
+
+muni_sum <- maize2DEFcmeans_l %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(meanmaize2 = mean(maize2),
+            sdmaize2   = sd(maize2),
+            meanDEFc = mean(meanDEFc),
+            sdDEFc = sd(meanDEFc) ) %>%
+  ungroup()
+
+state_sum <- muni_sum %>%
+  group_by(StateNM) %>%
+  summarise(meanmaize2Period = mean(meanmaize2),
+    meanDEFcPeriod = mean(meanDEFc)) %>%
+  ungroup()
+
+muni_states <- left_join(muni_sum, state_sum)
+
+muni_states <- muni_states %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(diffcmaize2Period = meanmaize2 - meanmaize2Period,
+    diffcDEFcPeriod= meanDEFc - meanDEFcPeriod) %>%
+  ungroup()
+
+muni_sum <- left_join(muni_sum, muni_states, b = c("year"="year","StateNM"="StateNM","RegionNM"="RegionNM"))
+
+```
+
+### Time Series
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=year, group=StateNM)) +
+  geom_line(aes(y=meanmaize2, colour=StateNM)) +
+  geom_line(aes(y=meanDEFc*200, colour=StateNM), linetype="longdash") +
+  scale_y_continuous(sec.axis = sec_axis(~./200, name = "Mean DEF count")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("maize2, DEF months count") +
+  ylab("Mean Municipality Productivity (k/ha)") + 
+  theme(legend.position = "bottom")
+```
+Dotted line is climate variable
+
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcDEFcPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  facet_grid(RegionNM~.)  + 
+  theme(legend.position = "bottom")
+
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcDEFcPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  geom_line(aes(y=meanmaize2/1000, colour=StateNM)) +
+  scale_y_continuous(sec.axis = sec_axis(~.*1000, name = "Mean maize2")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("maize2, DEF months count") +
+  ylab("DEF months count Diffc") + 
+  theme(legend.position = "bottom")
+
+```
+
+Differences are from the mean value for the period 2003-2016
+
+### Scatter (points are years)
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=meanDEFc, y=meanmaize2)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+muni_sum %>%
+  ggplot(aes(x=diffcDEFcPeriod, y=meanmaize2)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+```
+
+
+## DEF months mean
+```{r warning=F, message=F}
+
+muni_sum <- maize2DEFmmeans_l %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(meanmaize2 = mean(maize2),
+            sdmaize2   = sd(maize2),
+            meanDEFm = mean(meanDEFm),
+            sdDEFm = sd(meanDEFm) ) %>%
+  ungroup()
+
+state_sum <- muni_sum %>%
+  group_by(StateNM) %>%
+  summarise(meanmaize2Period = mean(meanmaize2),
+    meanDEFmPeriod = mean(meanDEFm)) %>%
+  ungroup()
+
+muni_states <- left_join(muni_sum, state_sum)
+
+muni_states <- muni_states %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(diffcmaize2Period = meanmaize2 - meanmaize2Period,
+    diffcDEFmPeriod= meanDEFm - meanDEFmPeriod) %>%
+  ungroup()
+
+muni_sum <- left_join(muni_sum, muni_states, b = c("year"="year","StateNM"="StateNM","RegionNM"="RegionNM"))
+
+```
+
+### Time Series
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=year, group=StateNM)) +
+  geom_line(aes(y=meanmaize2, colour=StateNM)) +
+  geom_line(aes(y=meanDEFm*25, colour=StateNM), linetype="longdash") +
+  scale_y_continuous(sec.axis = sec_axis(~./25, name = "Mean DEF months mean")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("maize2, DEF months mean") +
+  ylab("Mean Municipality Productivity (k/ha)") + 
+  theme(legend.position = "bottom")
+```
+Dotted line is climate variable
+
+```{r warning=F, message=F}
+
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcDEFmPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  facet_grid(RegionNM~.)  + 
+  theme(legend.position = "bottom")
+
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcDEFmPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  geom_line(aes(y=meanmaize2/200, colour=StateNM)) +
+  scale_y_continuous(sec.axis = sec_axis(~.*200, name = "Mean maize2")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("maize2, DEF months mean") +
+  ylab("DEF months mean Diffc") + 
+  theme(legend.position = "bottom")
+
+```
+Differences are from the mean value for the period 2003-2016
+
+### Scatter (points are years)
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=meanDEFm, y=meanmaize2)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+muni_sum %>%
+  ggplot(aes(x=diffcDEFmPeriod, y=meanmaize2)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+```
+
+
+## Dryness Index
+```{r warning=F, message=F}
+
+
+muni_sum <- maize2DImeans_l %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(meanmaize2 = mean(maize2),
+            sdmaize2   = sd(maize2),
+            meanDI = mean(meanDI),
+            sdDI = sd(meanDI) ) %>%
+  ungroup()
+
+state_sum <- muni_sum %>%
+  group_by(StateNM) %>%
+  summarise(meanmaize2Period = mean(meanmaize2),
+    meanDIPeriod = mean(meanDI)) %>%
+  ungroup()
+
+muni_states <- left_join(muni_sum, state_sum)
+
+muni_states <- muni_states %>%
+  group_by(year, StateNM, RegionNM) %>%
+  summarize(
+    diffcmaize2Period = meanmaize2 - meanmaize2Period,
+    diffcDIPeriod= meanDI - meanDIPeriod) %>%
+  ungroup()
+
+muni_sum <- left_join(muni_sum, muni_states, b = c("year"="year","StateNM"="StateNM","RegionNM"="RegionNM"))
+```
+
+### Time Series
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=year, group=StateNM)) +
+  geom_line(aes(y=meanmaize2, colour=StateNM)) +
+  geom_line(aes(y=meanDI*40, colour=StateNM), linetype="longdash") +
+  scale_y_continuous(sec.axis = sec_axis(~./40, name = "Mean Dryness Index")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("maize2, Dryness Index") +
+  ylab("Mean Municipality Productivity (k/ha)") + 
+  theme(legend.position = "bottom")
+```
+Dotted line is climate variable
+
+```{r warning=F, message=F}
+
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcDIPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  facet_grid(RegionNM~.)  + 
+  theme(legend.position = "bottom")
+
+muni_sum %>%
+  ggplot(aes(x=year, y=diffcDIPeriod, group=StateNM)) +
+  geom_bar(stat="identity", position="dodge", aes(fill=StateNM)) +
+  geom_line(aes(y=meanmaize2/200, colour=StateNM)) +
+  scale_y_continuous(sec.axis = sec_axis(~.*200, name = "Mean maize2")) +
+  facet_grid(RegionNM~.) + 
+  ggtitle("maize2, mean DI") +
+  ylab("mean DI Diffc") + 
+  theme(legend.position = "bottom")
+
+
+
+```
+
+Differences are from the mean value for the period 2003-2016
+
+### Scatter (points are years)
+```{r warning=F, message=F}
+muni_sum %>%
+  ggplot(aes(x=meanDI, y=meanmaize2)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+muni_sum %>%
+  ggplot(aes(x=diffcDIPeriod, y=meanmaize2)) +
+  geom_point(aes(colour=StateNM)) +
+  geom_smooth(aes(group=StateNM, colour = StateNM),method=lm, se=F) +
+  facet_grid(RegionNM~.)
+
+```
+
