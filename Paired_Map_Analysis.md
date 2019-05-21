@@ -213,11 +213,11 @@ for(i in seq_along(data_yrs)){
 
                Nat   OtherAgri   Agri   Other   Pasture
 ----------  ------  ----------  -----  ------  --------
-Nat          61651           0      0       0         0
-OtherAgri        0        2854   1926       0     21155
-Agri             0         582   6096       0      1891
-Other            0           0      0    2510         0
-Pasture          0           0      0       0     64321
+Nat          61618           0      0       0         0
+OtherAgri      372        2147   1926       0     21466
+Agri             0        2010   6542       0         0
+Other            0           0      0    1918         0
+Pasture       2148           0      0       0     61983
   
 ![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-1.png)<!-- -->![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-2.png)<!-- -->  
    
@@ -226,11 +226,11 @@ Pasture          0           0      0       0     64321
 
                Nat   OtherAgri   Agri   Other   Pasture
 ----------  ------  ----------  -----  ------  --------
-Nat          60963           0      0       0         0
-OtherAgri        0        3021   1940       0     20650
-Agri             0         543   6584       0      2022
-Other            0           0      0    2630         0
-Pasture          0           0      0       0     64633
+Nat          60922           0      0       0         0
+OtherAgri      370        2365   1940       0     20916
+Agri             0        2133   6994       0         0
+Other            0           0      0    2037         0
+Pasture       2151           0      0       0     62292
   
 ![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-3.png)<!-- -->![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-4.png)<!-- -->  
    
@@ -239,11 +239,11 @@ Pasture          0           0      0       0     64633
 
                Nat   OtherAgri   Agri   Other   Pasture
 ----------  ------  ----------  -----  ------  --------
-Nat          60290           0      0       0         0
-OtherAgri        0        3173   2022       0     19870
-Agri             0         608   6984       0      2027
-Other            0           0      0    2632         0
-Pasture          0           0      0       0     65380
+Nat          60258           0      0       0         0
+OtherAgri      319        2574   2022       0     20124
+Agri             0        2237   7361       0         0
+Other            0           0      0    2038         0
+Pasture       2176           0      0       0     63011
   
 ![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-5.png)<!-- -->![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-6.png)<!-- -->  
    
@@ -252,11 +252,11 @@ Pasture          0           0      0       0     65380
 
                Nat   OtherAgri   Agri   Other   Pasture
 ----------  ------  ----------  -----  ------  --------
-Nat          59931           0      0       0         0
-OtherAgri        0        3344   2084       0     18918
-Agri             0         704   7176       0      2135
-Other            0           0      0    2709         0
-Pasture          0           1      0       0     65984
+Nat          59473           0      0       0         0
+OtherAgri      257        2670   2084       0     19204
+Agri             0        2526   7470       0         0
+Other            0           0      0    2000         0
+Pasture       2217           0      0       0     63524
   
 ![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-7.png)<!-- -->![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-8.png)<!-- -->  
    
@@ -265,11 +265,11 @@ Pasture          0           1      0       0     65984
 
                Nat   OtherAgri   Agri   Other   Pasture
 ----------  ------  ----------  -----  ------  --------
-Nat          59340           0      0       0         0
-OtherAgri        0        3185   2010       0     18315
-Agri             0         654   7253       0      2782
-Other            0           0      0    2730         0
-Pasture          0           0      0       0     66717
+Nat          58886           0      0       0         0
+OtherAgri      249        2470   2010       0     18648
+Agri             0        3047   7621       0         0
+Other            0           0      0    2021         0
+Pasture       2235           0      0       0     64238
   
 ![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-9.png)<!-- -->![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-10.png)<!-- -->  
    
@@ -278,11 +278,11 @@ Pasture          0           0      0       0     66717
 
                Nat   OtherAgri   Agri   Other   Pasture
 ----------  ------  ----------  -----  ------  --------
-Nat          59177           0      0       0         0
-OtherAgri        0        3069   1765       0     16818
-Agri             0         643   7985       0      2589
-Other            0           0      0    2761         0
-Pasture          0           0      0       0     68179
+Nat          58718           0      0       0         0
+OtherAgri      255        2328   1765       0     17173
+Agri             0        2673   8521       0         0
+Other            0           0      0    2052         0
+Pasture       2229           0      0       0     65711
   
 ![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-11.png)<!-- -->![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-12.png)<!-- -->  
    
@@ -291,11 +291,11 @@ Pasture          0           0      0       0     68179
 
                Nat   OtherAgri   Agri   Other   Pasture
 ----------  ------  ----------  -----  ------  --------
-Nat          59455           0      0       0         0
-OtherAgri        0        3324   1609       0     17273
-Agri             0         730   7912       0      2905
-Other            0           0      0    2784         0
-Pasture          0           0      0       0     66994
+Nat          58990           0      0       0         0
+OtherAgri      282        2428   1609       0     17757
+Agri             0        2922   8607       0         0
+Other            0           0      0    2072         0
+Pasture       2232           0      0       0     64526
   
 ![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-13.png)<!-- -->![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-14.png)<!-- -->  
    
@@ -304,11 +304,11 @@ Pasture          0           0      0       0     66994
 
                Nat   OtherAgri   Agri   Other   Pasture
 ----------  ------  ----------  -----  ------  --------
-Nat          59269           0      0       0         0
-OtherAgri        0        3719   1693       0     17878
-Agri             0         820   8038       0      2667
-Other            0           0      0    2788         0
-Pasture          0           0      0       0     66114
+Nat          58810           0      0       0         0
+OtherAgri      289        2864   1693       0     18301
+Agri             0        2939   8567       0         0
+Other            0           0      0    2075         0
+Pasture       2212           0      0       0     63675
   
 ![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-15.png)<!-- -->![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-16.png)<!-- -->  
    
@@ -317,11 +317,11 @@ Pasture          0           0      0       0     66114
 
                Nat   OtherAgri   Agri   Other   Pasture
 ----------  ------  ----------  -----  ------  --------
-Nat          59176           0      0       0         0
-OtherAgri        0        4168   1553       0     18915
-Agri             0         784   8312       0      2651
-Other            0           0      0    2806         0
-Pasture          0           0      0       0     64621
+Nat          58732           0      0       0         0
+OtherAgri      328        3175   1553       0     19420
+Agri             0        2924   8807       0         0
+Other            0           0      0    2093         0
+Pasture       2244           0      0       0     62149
   
 ![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-17.png)<!-- -->![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-18.png)<!-- -->  
    
@@ -330,11 +330,11 @@ Pasture          0           0      0       0     64621
 
                Nat   OtherAgri   Agri   Other   Pasture
 ----------  ------  ----------  -----  ------  --------
-Nat          59300           0      0       0         0
-OtherAgri        0        4073   1453       0     19266
-Agri             0         641   7992       0      3309
-Other            0           0      0    2832         0
-Pasture          0           1      0       0     64119
+Nat          58852           0      0       0         0
+OtherAgri      325        3081   1453       0     19768
+Agri             0        3350   8576       0         0
+Other            0           0      0    2120         0
+Pasture       2227           0      0       0     61673
   
 ![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-19.png)<!-- -->![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-20.png)<!-- -->  
    
@@ -343,11 +343,11 @@ Pasture          0           1      0       0     64119
 
                Nat   OtherAgri   Agri   Other   Pasture
 ----------  ------  ----------  -----  ------  --------
-Nat          59284           0      0       0         0
-OtherAgri        0        4491   1595       0     19867
-Agri             0         757   8574       0      2462
-Other            0           0      0    2889         0
-Pasture          0           0      0       0     63067
+Nat          58830           0      0       0         0
+OtherAgri      313        3537   1595       0     20347
+Agri             0        2745   9032       0         0
+Other            0           0      0    2173         0
+Pasture       2229           0      0       0     60624
   
 ![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-21.png)<!-- -->![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-22.png)<!-- -->  
    
@@ -356,11 +356,11 @@ Pasture          0           0      0       0     63067
 
                Nat   OtherAgri   Agri   Other   Pasture
 ----------  ------  ----------  -----  ------  --------
-Nat          59157           0      0       0         0
-OtherAgri        0        4349   1475       0     19069
-Agri             0         791   9042       0      2685
-Other            0           0      0    2957         0
-Pasture          0           0      0       0     63461
+Nat          58709           0      0       0         0
+OtherAgri      292        3375   1475       0     19583
+Agri             0        2957   9546       0         0
+Other            0           0      0    2239         0
+Pasture       2200           0      0       0     61049
   
 ![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-23.png)<!-- -->![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-24.png)<!-- -->  
    
@@ -369,24 +369,24 @@ Pasture          0           0      0       0     63461
 
                Nat   OtherAgri    Agri   Other   Pasture
 ----------  ------  ----------  ------  ------  --------
-Nat          59727           0       0       0         0
-OtherAgri        0        4150    1279       0     14866
-Agri             0        1055   10090       0      3403
-Other            0           0       0    2989         0
-Pasture          0           0       0       0     65427
+Nat          59271           0       0       0         0
+OtherAgri      288        3164    1279       0     15406
+Agri             0        4034   10493       0         0
+Other            0           0       0    2269         0
+Pasture       2223           0       0       0     62998
   
 ![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-25.png)<!-- -->![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-26.png)<!-- -->  
    
  Crosstab  2014   
   
 
-               Nat   OtherAgri   Agri   Other   Pasture
-----------  ------  ----------  -----  ------  --------
-Nat          60159           0      0       0         0
-OtherAgri        0        4051   1484       0     12291
-Agri             0        1414   9683       0      3698
-Other            0           0      0    3016         0
-Pasture          0           0      0       0     67190
+               Nat   OtherAgri    Agri   Other   Pasture
+----------  ------  ----------  ------  ------  --------
+Nat          59699           0       0       0         0
+OtherAgri      270        3165    1484       0     12766
+Agri             0        4776   10001       0         0
+Other            0           0       0    2293         0
+Pasture       2223           0       0       0     64748
   
 ![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-27.png)<!-- -->![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-28.png)<!-- -->  
    
@@ -395,10 +395,10 @@ Pasture          0           0      0       0     67190
 
                Nat   OtherAgri    Agri   Other   Pasture
 ----------  ------  ----------  ------  ------  --------
-Nat          59952           0       0       0         0
-OtherAgri        0        3522    1316       0     11190
-Agri             0        1747   10609       0      4185
-Other            0           0       0    2973         0
-Pasture          0           0       0       0     67492
+Nat          59500           0       0       0         0
+OtherAgri      294        2666    1316       0     11618
+Agri             0        5513   10998       0         0
+Other            0           0       0    2249         0
+Pasture       2215           0       0       0     65056
   
 ![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-29.png)<!-- -->![](Paired_Map_Analysis_files/figure-html/unnamed-chunk-3-30.png)<!-- -->
