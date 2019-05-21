@@ -20,10 +20,10 @@ library(readxl)
 
 ```{r warning=F, message=F}
 ##Load Production Data
-meat_prod_Astates <- read_excel("Cattle_meat_production_Kg_2000_2017_all_states.xlsx", sheet = "Plan1", skip = 1)  #data for all states Astates
+meat_prod_Astates <- read_excel("ProductionData/Cattle_meat_production_Kg_2000_2017_all_states.xlsx", sheet = "Plan1", skip = 1)  #data for all states Astates
 
 #dairy data are by municiaplity for all states (Amunis)
-dairy_prod_Amunis <- read_excel("dairy_Municipalities_Brazil.xlsx", sheet = "Tabela", skip = 1, na = c("", "-", "..."))
+dairy_prod_Amunis <- read_excel("ProductionData/dairy_Municipalities_Brazil.xlsx", sheet = "Tabela", skip = 1, na = c("", "-", "..."))
 
 ##Tidy production data
 meat_prod_Astates <- meat_prod_Astates %>%
@@ -58,9 +58,9 @@ dairy_prod_Astates <- dairy_prod_Astates %>%
 
 ```{r warning=F, message=F}
 ##Load exports data
-meat_exp_Astates <- read_excel("Brazilian_Cattle_meat_exports_TOTAL_2000_2017.xls", sheet="Sheet1", range="B3:AG5", col_names=F)
+meat_exp_Astates <- read_excel("ProductionData/Brazilian_Cattle_meat_exports_TOTAL_2000_2017.xls", sheet="Sheet1", range="B3:AG5", col_names=F)
 
-dairy_exp_Astates <- read_excel("Brazilian_dairy_exports_TOTAL_2000_2017.xls", sheet="Sheet1", range="C3:AH5", col_names=F)
+dairy_exp_Astates <- read_excel("ProductionData/Brazilian_dairy_exports_TOTAL_2000_2017.xls", sheet="Sheet1", range="C3:AH5", col_names=F)
 
 ##Tidy exports data
 meat_exp_Astates <- as_tibble(t(meat_exp_Astates))   #transpose
