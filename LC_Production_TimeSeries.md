@@ -1,7 +1,7 @@
 ---
 title: "Land Use and Production Time Series - BrazilAgriAnalysis"
 author: "James D.A. Millington"
-date: "July 2018"
+date: "June 2019"
 output: 
   html_document: 
     keep_md: yes
@@ -24,18 +24,21 @@ yrs <- seq(2000, 2015, 1)
 #load the region file (used to match each cell to a municipality)
 region <- read.csv("SummaryTables/region.csv")
 
-i <- 1
+#for debugging
+#i <- 1
 
 
+#loop through all years
 for(i in seq_along(yrs)){
   
-  
+  #if this is the first year, create lc_dat
   if(i == 1){
     lc_dat <- read_csv(paste0("SummaryTables/LCs",yrs[i],"_PastureB.csv"))   #load empirical map summary data (created using summarise_LCmaps.r)
     lc_dat <- lc_dat %>%
       mutate(year = yrs[i]) 
   }
   
+  #if this is not the first year, bind new year data to lc_dat
   else {
     
     lc <- read_csv(paste0("SummaryTables/LCs",yrs[i],"_PastureB.csv"))   #load empirical map summary data (created using summarise_LCmaps.r)
@@ -69,7 +72,7 @@ lc_dat <- lc_dat %>%
 #LC4 = Other
 #LC5 = Pasture
 
-#add cell count columns  
+#add observed cell count columns  
 lc_dat <- lc_dat %>%
       mutate(Nature = round(LC1 * NonNAs,0)) %>%
       mutate(OAgri = round(LC2 * NonNAs,0)) %>%
@@ -77,11 +80,12 @@ lc_dat <- lc_dat %>%
       mutate(Other = round(LC4 * NonNAs,0)) %>%
       mutate(Pasture = round(LC5 * NonNAs,0))
 
-
+#make data long
 lc_cells_long <- lc_dat %>%
   select(year:Pasture) %>%
   gather(key = LC, value = cells, -year, -state)
 
+#calculate state totals
 lc_cells_long_states <- lc_cells_long %>% 
   group_by(state, year,LC) %>%
   summarise_at(vars(matches("cells")),sum)
@@ -96,7 +100,8 @@ lc_cells_long_states %>%
   geom_bar(stat = "identity") +
   scale_y_continuous(name = "Cells", labels = scales::comma) +
   facet_grid(.~state) +
-  ggtitle("Ten States")
+  ggtitle("Ten States Observed Cells") + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
 ```
 
 ![](LC_Production_TimeSeries_files/figure-html/unnamed-chunk-3-1.png)<!-- -->
@@ -114,10 +119,21 @@ lc_cells_long_brazil %>%
   geom_bar(stat = "identity", colour="white") +
   scale_y_continuous(name = "Cells", labels = scales::comma) +
   #facet_grid(.~state) +
-  ggtitle("Ten States")
+  ggtitle("Ten States Observed Cells")
 ```
 
 ![](LC_Production_TimeSeries_files/figure-html/unnamed-chunk-4-1.png)<!-- -->
+
+```r
+lc_cells_long_brazil %>% 
+  ggplot(aes(x = year, y = cells, colour = LC)) + 
+  geom_line(size = 1) +
+  scale_y_continuous(name = "Cells", labels = scales::comma) +
+  #facet_grid(.~state) +
+  ggtitle("Ten States Observed Cells")
+```
+
+![](LC_Production_TimeSeries_files/figure-html/unnamed-chunk-4-2.png)<!-- -->
 
 
 
@@ -125,16 +141,16 @@ Use production data from IBGE
 
 ```r
 ##Load Production Data
-meat_prod_Astates_Data <- read_excel("Cattle_meat_production_Kg_2000_2017_all_states.xlsx", sheet = "Plan1", skip = 1)  #data for all states Astates
+meat_prod_Astates_Data <- read_excel("ProductionData/Cattle_meat_production_Kg_2000_2017_all_states.xlsx", sheet = "Plan1", skip = 1)  #data for all states Astates
 
 #dairy data are by municiaplity for all states (Amunis)
-dairy_prod_Amunis_Data <- read_excel("dairy_Municipalities_Brazil.xlsx", sheet = "Tabela", skip = 1, na = c("", "-", "..."))
+dairy_prod_Amunis_Data <- read_excel("ProductionData/dairy_Municipalities_Brazil.xlsx", sheet = "Tabela", skip = 1, na = c("", "-", "..."))
 
 #maize data are by municiaplity for all states (Amunis)
-maize_prod_Amunis_Data <- read_excel("maize_brazil.xlsx", sheet = "Production (tons)", skip = 1, na = c("", "-", "..."))
+maize_prod_Amunis_Data <- read_excel("ProductionData/maize_brazil.xlsx", sheet = "Production (tons)", skip = 1, na = c("", "-", "..."))
 
 #maize data are by municiaplity for all states (Amunis)
-soy_prod_Amunis_Data <- read_excel("soybean_brazil.xlsx", sheet = "Production (Tons)", skip = 1, na = c("", "-", "..."))
+soy_prod_Amunis_Data <- read_excel("ProductionData/soybean_brazil.xlsx", sheet = "Production (Tons)", skip = 1, na = c("", "-", "..."))
 
 
 Fstate_vals <- c(17,	29,	31,	35,	41,	42,	43,	50,	51,	52)
@@ -165,7 +181,7 @@ dairy_prod_Amunis <- dairy_prod_Amunis_Data %>%
   filter(!is.na(muniID)) %>%   #safer way to remove text line in muniID
   mutate(state = substr(muniID, 1, 2)) %>%     #extract the muniID
   mutate_at(vars("2000":"2015"), as.numeric) %>%  #convert values to numeric
-  select(-muniID, -Municipality)   #drop unwanted columns
+  select(-Municipality)   #drop unwanted columns
 
 dairy_prod_Astates <- dairy_prod_Amunis %>%
   group_by(state) %>%
@@ -174,10 +190,10 @@ dairy_prod_Astates <- dairy_prod_Amunis %>%
   mutate(state=replace(state, 1:length(Astate_codes$stateid), Astate_codes$state)) #re-label stated ids with state abbrevs
 
 dairy_prod_Astates_long <- dairy_prod_Astates %>%
-  gather(key = year, value = dairy_kg, -state) %>%
+  gather(key = year, value = dairy_kg, -state, -muniID) %>%
   mutate_at(vars(year), as.integer) %>%
   mutate(dairy_gg = dairy_kg * 0.000001) %>%  #convert from kg to gg
-  select(-dairy_kg)
+  select(-dairy_kg, -muniID)
 
 
 #MAIZE
@@ -187,7 +203,7 @@ maize_prod_Amunis <- maize_prod_Amunis_Data %>%
   filter(!is.na(muniID)) %>%   #safer way to remove text line in muniID
   mutate(state = substr(muniID, 1, 2)) %>%     #extract the muniID
   mutate_at(vars("2000":"2015"), as.numeric) %>%  #convert values to numeric
-  select(-muniID, -Municipality)   #drop unwanted columns
+  select(-Municipality)   #drop unwanted columns
 
 maize_prod_Astates <- maize_prod_Amunis %>%
   group_by(state) %>%
@@ -195,10 +211,10 @@ maize_prod_Astates <- maize_prod_Amunis %>%
   mutate(state=replace(state, 1:length(Astate_codes$stateid), Astate_codes$state)) #re-label stated ids with state abbrevs
 
 maize_prod_Astates_long <- maize_prod_Astates %>%
-  gather(key = year, value = maize_kg, -state) %>%
+  gather(key = year, value = maize_kg, -state, -muniID) %>%
   mutate_at(vars(year), as.integer) %>%
   mutate(maize_gg = maize_kg * 0.001) %>%  #convert from tons to gg
-  select(-maize_kg)
+  select(-maize_kg, -muniID)
 
 ##SOY
 
@@ -207,7 +223,7 @@ soy_prod_Amunis <- soy_prod_Amunis_Data %>%
   filter(!is.na(muniID)) %>%   #safer way to remove text line in muniID
   mutate(state = substr(muniID, 1, 2)) %>%     #extract the muniID
   mutate_at(vars("2000":"2015"), as.numeric) %>%  #convert values to numeric
-  select(-muniID, -Municipality)   #drop unwanted columns
+  select(-Municipality)   #drop unwanted columns
 
 soy_prod_Astates <- soy_prod_Amunis %>%
   group_by(state) %>%
@@ -215,10 +231,10 @@ soy_prod_Astates <- soy_prod_Amunis %>%
   mutate(state=replace(state, 1:length(Astate_codes$stateid), Astate_codes$state)) #re-label stated ids with state abbrevs
 
 soy_prod_Astates_long <- soy_prod_Astates %>%
-  gather(key = year, value = soy_kg, -state) %>%
+  gather(key = year, value = soy_kg, -state, -muniID) %>%
   mutate_at(vars(year), as.integer) %>%
   mutate(soy_gg = soy_kg * 0.001) %>%  #convert from tons to gg
-  select(-soy_kg)
+  select(-soy_kg, -muniID)
 
 prod_state_year <- left_join(meat_prod_Astates_long, dairy_prod_Astates_long, by = c("year", "state"))
 
@@ -288,7 +304,7 @@ psimy_long_sim %>%
   geom_bar(stat = "identity", colour="white") +
   scale_y_continuous(name = "Production (cells)", labels = scales::comma) +
   #facet_grid(.~state) +
-  ggtitle("Production Data")
+  ggtitle("Production Data: cells given perfect production")
 ```
 
 ![](LC_Production_TimeSeries_files/figure-html/unnamed-chunk-7-1.png)<!-- -->
@@ -299,14 +315,16 @@ psimy_long_sim %>%
   geom_line(size = 1) +
   scale_y_continuous(name = "Production (cells)", labels = scales::comma) +
   #facet_grid(.~state) +
-  ggtitle("Production Data")
+  ggtitle("Production Data: cells given perfect production")
 ```
 
 ![](LC_Production_TimeSeries_files/figure-html/unnamed-chunk-7-2.png)<!-- -->
 
 From the observed production data we see increasing required cells, from 20,000 to 40,000
 
-Now let's see what we got in the observed land cover data (we'll aggrgeate the production data to 'Agri' and Pasture' to match the LC data)
+To compare this estimated number of cells (from perfect production) with the number of cells observed in land cover maps, we first need to aggrgeate the production data to 'Agri' and Pasture' to match the LC data
+
+
 
 ```r
 psimy_wide_sim  <- psimy_long_sim %>%
@@ -322,31 +340,82 @@ plcsim_long_sim <- psimy_wide_sim %>%
 plcsim_long_sim %>% 
   ggplot(aes(x = year, y = cells, fill = LC)) + 
   geom_bar(stat = "identity", colour="white") +
-  scale_y_continuous(name = "Cells", labels = scales::comma) +
+  scale_y_continuous(name = "Production(cells)", labels = scales::comma) +
   #facet_grid(.~state) +
-  ggtitle("Production Data")
+  ggtitle("Production Data: cells given perfect production")
 ```
 
 ![](LC_Production_TimeSeries_files/figure-html/unnamed-chunk-8-1.png)<!-- -->
 
 ```r
-c <- lc_cells_long_brazil %>% 
+plcsim_long_sim %>% 
+  ggplot(aes(x = year, y = cells, fill = LC)) + 
+  geom_bar(stat = "identity", colour="white", position="fill") +
+  scale_y_continuous(name = "Production(cells)", labels = scales::percent_format()) +
+  #facet_grid(.~state) +
+  ggtitle("Production Data: cells given perfect production")
+```
+
+![](LC_Production_TimeSeries_files/figure-html/unnamed-chunk-8-2.png)<!-- -->
+
+```r
+plcsim_long_sim %>% 
+  ggplot(aes(x = year, y = cells, colour = LC)) + 
+  geom_line(size = 1) +
+  scale_y_continuous(name = "Production (cells)", labels = scales::comma) +
+  #facet_grid(.~state) +
+  ggtitle("Production Data: cells given perfect production")
+```
+
+![](LC_Production_TimeSeries_files/figure-html/unnamed-chunk-8-3.png)<!-- -->
+
+Now let's see what we got in the observed land cover data 
+
+
+```r
+lc_cells_long_brazil %>% 
   filter(LC == "Agri" | LC == "Pasture") %>%
   ggplot(aes(x = year, y = cells, fill = LC)) + 
   geom_bar(stat = "identity", colour="white") +
   scale_y_continuous(name = "Cells", labels = scales::comma) +
   #facet_grid(.~state) +
-  ggtitle("Land Cover Data")
-print(c)
+  ggtitle("Land Cover Data Observed Cells")
 ```
 
-![](LC_Production_TimeSeries_files/figure-html/unnamed-chunk-8-2.png)<!-- -->
+![](LC_Production_TimeSeries_files/figure-html/unnamed-chunk-9-1.png)<!-- -->
 
-Note that proportions look about right but there are many more cells in the LC data than predicted by the conversion from production data. 
+```r
+lc_cells_long_brazil %>% 
+  filter(LC == "Agri" | LC == "Pasture") %>%
+  ggplot(aes(x = year, y = cells, fill = LC)) + 
+  geom_bar(stat = "identity", colour="white", position="fill") +
+  scale_y_continuous(name = "Cells", labels = scales::percent_format()) +
+  #facet_grid(.~state) +
+  ggtitle("Land Cover Data Observed Cells")
+```
 
-Let's check the proportions (AP ratio is ```Agri / Pasture```)
+![](LC_Production_TimeSeries_files/figure-html/unnamed-chunk-9-2.png)<!-- -->
 
-Production Data
+```r
+lc_cells_long_brazil %>% 
+  filter(LC == "Agri" | LC == "Pasture") %>%
+  ggplot(aes(x = year, y = cells, colour = LC)) + 
+  geom_line(size = 1) +
+  scale_y_continuous(name = "Cells", labels = scales::comma) +
+  #facet_grid(.~state) +
+  ggtitle("Land Cover Data Observed Cells")
+```
+
+![](LC_Production_TimeSeries_files/figure-html/unnamed-chunk-9-3.png)<!-- -->
+
+Proportions are about right (Agri increases share through time) although observed land area in agriculture increases more consistently than according to that estimated from (perfect) production
+
+However, in terms of absolute number of cells there are many more cells observed in the LC data than predicted by perfect production data. 
+
+Let's look at these data in table format.
+
+## Production Data
+Values are number of cells (`APratio` is ```Agri / Pasture```)
 
 ```r
 psimy_wide_sim <- psimy_wide_sim %>%  
@@ -361,14 +430,15 @@ psimy_wide_sim
   </script>
 </div>
 
-Land Cover Data
+## Land Cover Data
+Values are number of cells (`APratio` is ```Agri / Pasture```)
 
 ```r
 lc_cells_wide_brazil <- lc_cells_long_brazil %>%
   spread(LC, cells) %>%
   mutate(APratio = round(Agri / Pasture,3))
 
-lc_cells_wide_brazil
+lc_cells_wide_brazil 
 ```
 
 <div data-pagedtable="false">
@@ -377,25 +447,11 @@ lc_cells_wide_brazil
   </script>
 </div>
 
-So proportions seem to be not too bad. But absolute values are way off. This is likely because observed land was not producing 'perfect' yields. So, let's see what assuming production conversion is not perfect does.
-
-Let's assume cells on average produce 50% of perfect production:
+Again, we see proportions are quite similar, but absolute numbers of cells are way off. This is likely because observed land was not producing 'perfect' yields. So, let's see what assuming production conversion is not perfect does.
 
 
-```r
-plcsim_long_sim %>%
-  mutate(cells = cells * 2) %>%
-  ggplot(aes(x = year, y = cells, fill = LC)) + 
-  geom_bar(stat = "identity", colour="white") +
-  scale_y_continuous(name = "Cells", labels = scales::comma) +
-  #facet_grid(.~state) +
-  ggtitle("Production Data (50% conversion)")
-```
+First let's calculate what 'production efficiency' (i.e. proportion of 'perfect' production) the observed numbers of cells indicates. 
 
-![](LC_Production_TimeSeries_files/figure-html/unnamed-chunk-11-1.png)<!-- -->
-Now we get similar values for 2013 onwards, but not in earlier years. The increase through time (compared to LC data) likely indicates yields have improved through time... 
-
-Let's plot the relationship between production (cells) and land cover (cells): 
 
 ```r
 joined <- left_join(plcsim_long_sim, lc_cells_long_brazil, by = c("year", "LC"))
@@ -403,57 +459,101 @@ joined <- left_join(plcsim_long_sim, lc_cells_long_brazil, by = c("year", "LC"))
 joined <- joined %>%
   mutate(prod_cells = round(cells.x,0)) %>% 
   select(-cells.x) %>%
-  rename(lc_cells = cells.y)
+  rename(lc_cells = cells.y) %>% 
+  mutate(pe = prod_cells / lc_cells )
 
+joined %>%
+  ggplot(aes(x = year, y = pe, colour = LC)) + 
+  geom_line(size = 1) +
+  scale_y_continuous(name = "Proportion (of Perfect)", labels = scales::comma) +
+  #facet_grid(.~state) +
+  ggtitle("Production Efficiency")
+```
+
+![](LC_Production_TimeSeries_files/figure-html/unnamed-chunk-12-1.png)<!-- -->
+
+We see a clear increasing trend for pasture, while for agriculure it fluctuates around 0.40. 
+
+The increasing trend in Pasture may be driven by dairy so let's see what calculating the proportion of pasture from meat production alone looks like. 
+
+
+```r
+psimy_long_sim_r <- psimy_long_sim %>%
+  mutate(meat = if_else(commodity == "meat_gg", "Pasture", "other")) %>%
+  select(-commodity, -sumsim)
+      
+joined_lcs <- left_join(joined, psimy_long_sim_r, by = c("year" = "year", "LC" = "meat"))
+
+joined_lcs <- joined_lcs %>%
+  mutate(cells = round(cells,0)) %>% 
+  select(-simulated.y) %>%
+  rename(meat_cells = cells) %>% 
+  mutate(meat_pe = meat_cells / lc_cells )
+
+joined_lcs %>%
+  ggplot(aes(x = year, y = meat_pe, colour = LC)) + 
+  geom_line(size = 1) +
+  scale_y_continuous(name = "Proportion (of perfect)", labels = scales::comma) +
+  #facet_grid(.~state) +
+  ggtitle("Production Efficiency (meat only)")
+```
+
+![](LC_Production_TimeSeries_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
+
+Trend remains although absolute values are smaller... 
+
+All this implies Pasture has a greater increase in yield than agricultural commodities. 
+
+Let's plot the relationship between production (cells) and land cover (cells): 
+
+```r
 joined %>% ggplot(aes(x = prod_cells, y = lc_cells, colour=year, shape=LC)) + 
   geom_point() +
   geom_abline(intercept = 0, slope = 1, color = "black") +
   ggtitle("Perfect Conversion")
 ```
 
-![](LC_Production_TimeSeries_files/figure-html/unnamed-chunk-12-1.png)<!-- -->
+![](LC_Production_TimeSeries_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
 
 We see that for maximum (perfect) production, neither Agri nor Pasture correlate well. 
 
+When we plot the 40% conversion (above) we see Agri matches up much better (at any point in time).
 
-```r
-p <- joined %>%
-  mutate(prod_cells50 = prod_cells / 0.5) %>%
-  ggplot(aes(x = prod_cells50, y = lc_cells, colour=year, shape=LC)) + 
-  geom_point() +
-  geom_abline(intercept = 0, slope = 1, color = "black") +
-  ggtitle("Imperfect Conversion (50%)")
-print(p)
-```
-
-![](LC_Production_TimeSeries_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
-
-When we plot the 50% conversion (above) we see Agri matches up much better (at any point in time).
-
-Pasture has a poor relationship because production is relatively poor in earlier years. So the influence of improving yield seems important for Pasture but less so Agri... 
+Pasture has a poor relationship because production is relatively poor in earlier years. So again this shows the influence of improving yield seems important for Pasture but less so Agri... 
 
 
 ```r
-p <- joined %>%
-  mutate(prod_cells50 = prod_cells / 0.4) %>%
-  filter(LC == "Agri") %>%
-  ggplot(aes(x = prod_cells50, y = lc_cells, colour=year, shape=LC)) + 
+joined <- joined %>%
+  mutate(prod_cells40 = prod_cells / 0.4) 
+
+joined %>%
+  ggplot(aes(x = prod_cells40, y = lc_cells, colour=year, shape=LC)) + 
   geom_point() +
   geom_abline(intercept = 0, slope = 1, color = "black") +
   ggtitle("Imperfect Conversion (40%)")
-print(p)
 ```
 
-![](LC_Production_TimeSeries_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
+![](LC_Production_TimeSeries_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
+
 
 When we examine 40% conversion we see that Agri is well aligned; this implies we should aim for mean Agri service provsion of 0.4.... although this will need to take into account Soy, Maize and Double Cropper services. How to do this? Need to check current mean service values...
+
+
+```r
+joined %>%
+  filter(LC == "Agri") %>%
+  ggplot(aes(x = prod_cells40, y = lc_cells, colour=year, shape=LC)) + 
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "black") +
+  ggtitle("Imperfect Conversion (40%)")
+```
+
+![](LC_Production_TimeSeries_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
+
+
 
 Questions:
 - is it right that yields of agri have not improved through time?; 
 Well, yes we can see this from figures above... gg of both soy and maize have increased as well as overall Agri land cover area (cells). But pasture land cover (cells) has increased only a little relative to production (gg) 
 
 So why have pasture yields increased through time? Or has it been grassland that has been converted to pasture? This wouldn't be picked up by our land cover maps data.  Could we check this issue by comparing land cover data from maps and pasture area from IBGE? We have planted/harvested data for soy and maize (which we could compare to LC maps) but not for dairy and meat...
-
-
-
-
