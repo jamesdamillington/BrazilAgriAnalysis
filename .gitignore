@@ -5,6 +5,7 @@
 
 *.ini
 *.pdf
+*.csv
 /ClimateData/
 /ProductionData/
 /SummaryTables/
