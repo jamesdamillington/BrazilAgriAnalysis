@@ -287,8 +287,12 @@ psimy_long_sim  <- psimy_long_sim %>%
   mutate(cells = if_else(commodity == "dairy_gg", sumsim / 2.5, 
       if_else(commodity == "maize_gg", sumsim / 30,
       if_else(commodity == "meat_gg", sumsim / 0.275, sumsim / 20)
+      ))) %>%
+  mutate(commodity = if_else(commodity == "dairy_gg", "dairy", 
+      if_else(commodity == "maize_gg", "maize",
+      if_else(commodity == "meat_gg", "meat", "soy"
       )))
-
+  )
 
 psimy_long_sim %>% 
   ggplot(aes(x = year, y = cells, fill = commodity)) + 
@@ -305,12 +309,19 @@ psimy_long_sim %>%
   #facet_grid(.~state) +
   ggtitle("Production Data: cells given perfect production")
 
+psimy_wide_sim  <- psimy_long_sim %>%
+  select(-sumsim) %>%
+  spread(commodity, cells) 
+
+print(psimy_wide_sim)
+
+#write_csv(psimy_wide_sim, "TotalProduction.csv")
 
 ```
 
 From the observed production data we see increasing required cells, from 20,000 to 40,000
 
-To compare this estimated number of cells (from perfect production) with the number of cells observed in land cover maps, we first need to aggrgeate the production data to 'Agri' and Pasture' to match the LC data
+To compare this estimated number of cells (from perfect production) with the number of cells observed in land cover maps, we first need to aggregeate the production data to 'Agri' and Pasture' to match the LC data
 
 
 ```{r warning=F, message=F}
@@ -511,3 +522,27 @@ Questions:
 Well, yes we can see this from figures above... gg of both soy and maize have increased as well as overall Agri land cover area (cells). But pasture land cover (cells) has increased only a little relative to production (gg) 
 
 So why have pasture yields increased through time? Or has it been grassland that has been converted to pasture? This wouldn't be picked up by our land cover maps data.  Could we check this issue by comparing land cover data from maps and pasture area from IBGE? We have planted/harvested data for soy and maize (which we could compare to LC maps) but not for dairy and meat...
+
+
+
+Assuming 0.4 production efficiency for Soy and Maize, what is the number of cells that would be required given the observed production?
+
+
+```{r warning=F, message=F}
+
+
+psimy_long_sim  <- psimy_long_sim %>%
+  mutate(prod04_cells = cells / 0.4)
+
+
+psimy_long_sim %>% 
+  filter(commodity == "maize_gg" | commodity == "soy_gg") %>%
+  ggplot(aes(x = year, y = prod04_cells, colour = commodity)) + 
+  geom_line(size = 1) +
+  scale_y_continuous(name = "Cells", labels = scales::comma) +
+  #facet_grid(.~state) +
+  ggtitle("Production Data: cells given 0.4 production")
+
+
+```
+
