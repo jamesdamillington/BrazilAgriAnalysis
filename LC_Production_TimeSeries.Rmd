@@ -329,7 +329,7 @@ To compare this estimated number of cells (from perfect production) with the num
 psimy_wide_sim  <- psimy_long_sim %>%
   select(-sumsim) %>%
   spread(commodity, cells) %>%
-  mutate(Agri = maize_gg + soy_gg, Pasture = dairy_gg + meat_gg)
+  mutate(Agri = maize + soy, Pasture = dairy + meat)
 
 plcsim_long_sim <- psimy_wide_sim %>%
   select(year, Agri, Pasture) %>%
@@ -447,7 +447,7 @@ The increasing trend in Pasture may be driven by dairy so let's see what calcula
 ```{r warning=F, message=F}
 
 psimy_long_sim_r <- psimy_long_sim %>%
-  mutate(meat = if_else(commodity == "meat_gg", "Pasture", "other")) %>%
+  mutate(meat = if_else(commodity == "meat", "Pasture", "other")) %>%
   select(-commodity, -sumsim)
       
 joined_lcs <- left_join(joined, psimy_long_sim_r, by = c("year" = "year", "LC" = "meat"))
@@ -456,7 +456,8 @@ joined_lcs <- joined_lcs %>%
   mutate(cells = round(cells,0)) %>% 
   select(-simulated.y) %>%
   rename(meat_cells = cells) %>% 
-  mutate(meat_pe = meat_cells / lc_cells )
+  mutate(meat_pe = 
+      meat_cells / lc_cells )
 
 joined_lcs %>%
   ggplot(aes(x = year, y = meat_pe, colour = LC)) + 
@@ -464,6 +465,10 @@ joined_lcs %>%
   scale_y_continuous(name = "Proportion (of perfect)", labels = scales::comma) +
   #facet_grid(.~state) +
   ggtitle("Production Efficiency (meat only)")
+
+print(joined_lcs)
+
+write_csv(joined_lcs, "ProductionEfficiency.csv")
 
 ```
 
