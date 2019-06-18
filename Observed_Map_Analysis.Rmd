@@ -1,7 +1,7 @@
 ---
 title: "Observed Map Analysis - BrazilAgriAnalysis"
 author: "James D.A. Millington"
-date: "August 2018"
+date: "June 2019"
 output: 
   html_document: 
     keep_md: yes
@@ -95,17 +95,19 @@ makeObsLUmap <- function(LU, year) {
 
 
 ```{r results='hide', warning=F, message=F}
-input_path <- "C:/Users/k1076631/Google Drive/Shared/Crafty Telecoupling/Data/"
+#input_path <- "C:/Users/k1076631/Google Drive/Shared/Crafty Telecoupling/Data/"
+input_path <- "C:/Users/k1076631/Google Drive/Shared/Crafty Telecoupling/CRAFTY_testing/"
 classification <- "PastureB"
 
-data_yrs <- seq(2000, 2015, 1)
+data_yrs <- seq(2001, 2015, 1)
 
 for(i in seq_along(data_yrs)){
 
   #create a stack of rasters
   
-  inname <- paste0(input_path,"LandCover/MapBiomas23/ClassificationComparison/ASCII/brazillc_",data_yrs[i],"_",classification,".asc")
+  #inname <- paste0(input_path,"LandCover/MapBiomas23/ClassificationComparison/ASCII/brazillc_",data_yrs[i],"_",classification,".asc")
 
+  inname <- paste0(input_path,"CRAFTYOutput/Data/ObservedLCmaps/PlantedArea_brazillc_",classification,"_",data_yrs[i],".asc")
   
   lc <- raster(inname)
   
@@ -116,7 +118,9 @@ for(i in seq_along(data_yrs)){
 }
 
 #mask to study area
-munis.r <- raster(paste0(input_path,"LandCover/MapBiomas23/ClassificationComparison/sim10_BRmunis_latlon_5km_2018-04-27.asc"))
+#munis.r <- raster(paste0(input_path,"LandCover/MapBiomas23/ClassificationComparison/sim10_BRmunis_latlon_5km_2018-04-27.asc"))
+
+munis.r <- raster(paste0(input_path,"CRAFTYOutput/Data/ObservedLCmaps/sim10_BRstates_latlon_5km.asc"))
 
 s <- mask(x=s, mask=munis.r)  #JM edited munis.r  
 s <- trim(s, padding=2)
