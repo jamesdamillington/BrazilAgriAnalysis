@@ -1,2 +1,2 @@
 # BrazilAgriAnalysis
-Analysis of Brazil agricultural comodities data for CRAFTY-STELLA Telecoupling project
+Analysis of Brazil agricultural comodities data for CRAFTY Brazil modelling project
