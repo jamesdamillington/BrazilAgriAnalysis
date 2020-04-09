@@ -1,7 +1,7 @@
 ---
 title: "Land Use and Production Time Series - BrazilAgriAnalysis"
 author: "James D.A. Millington"
-date: "June 2019"
+date: "October 2019"
 output: 
   html_document: 
     keep_md: yes
@@ -19,10 +19,10 @@ library(readxl)
 
 Using Summary Table data for observed Land Cover (PastureB classification)
 ```{r warning=F, message=F}
-yrs <- seq(2001, 2015, 1)
+yrs <- seq(2001, 2018, 1)
 
 #load the region file (used to match each cell to a municipality)
-region <- read.csv("SummaryTables/region2000_moistureDev.csv")
+region <- read.csv("SummaryTables/region2001_noDC_HD_2019-10-28.csv")
 
 #for debugging
 #i <- 1
@@ -33,7 +33,7 @@ for(i in seq_along(yrs)){
   
   #if this is the first year, create lc_dat
   if(i == 1){
-    lc_dat <- read_csv(paste0("SummaryTables/LCs",yrs[i],"_PastureB.csv"))   #load empirical map summary data (created using summarise_LCmaps.r)
+    lc_dat <- read_csv(paste0("SummaryTables/SummaryTable",yrs[i],"_PastureB_Disagg.csv"))   #load empirical map summary data (created using summarise_LCmaps.r)
     lc_dat <- lc_dat %>%
       mutate(year = yrs[i]) 
   }
@@ -41,7 +41,7 @@ for(i in seq_along(yrs)){
   #if this is not the first year, bind new year data to lc_dat
   else {
     
-    lc <- read_csv(paste0("SummaryTables/LCs",yrs[i],"_PastureB.csv"))   #load empirical map summary data (created using summarise_LCmaps.r)
+    lc <- read_csv(paste0("SummaryTables/SummaryTable",yrs[i],"_PastureB_Disagg.csv"))   #load empirical map summary data (created using summarise_LCmaps.r)
     lc <- lc %>%
       mutate(year = yrs[i])
     
@@ -144,16 +144,14 @@ lc_cells_long_brazil %>%
 Use production data from IBGE
 ```{r warning=F, message=F}
 ##Load Production Data
-meat_prod_Astates_Data <- read_excel("ProductionData/Cattle_meat_production_Kg_2000_2017_all_states.xlsx", sheet = "Plan1", skip = 1)  #data for all states Astates
+meat_prod_Astates_Data <- read_excel("ProductionData/Cattle_meat_production_Kg_2000_2018_all_states.xlsx", sheet = "Plan1", skip = 1)  #data for all states Astates
 
 #dairy data are by municiaplity for all states (Amunis)
-dairy_prod_Amunis_Data <- read_excel("ProductionData/dairy_Municipalities_Brazil.xlsx", sheet = "Tabela", skip = 1, na = c("", "-", "..."))
+#dairy_prod_Amunis_Data <- read_excel("ProductionData/dairy_Municipalities_Brazil.xlsx", sheet = "Tabela", skip = 1, na = c("", "-", "..."))
 
 #maize data are by municiaplity for all states (Amunis)
 maize_prod_Amunis_Data <- read_excel("ProductionData/maize_brazil.xlsx", sheet = "Production (tons)", skip = 1, na = c("", "-", "..."))
 
-#maize data are by municiaplity for all states (Amunis)
-maize2_prod_Amunis_Data <- read_excel("ProductionData/maize2_brazil.xlsx", sheet = "Production (tons)", skip = 1, na = c("", "-", "..."), col_types = c("numeric", "guess","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric"))  #need to specify for 2010 column
 
 #maize data are by municiaplity for all states (Amunis)
 soy_prod_Amunis_Data <- read_excel("ProductionData/soybean_brazil.xlsx", sheet = "Production (Tons)", skip = 1, na = c("", "-", "..."))
@@ -171,9 +169,9 @@ Astate_codes <- meat_prod_Astates_Data %>%
 ##MEAT
 meat_prod_Astates <- meat_prod_Astates_Data %>%
   rename(state = NM_UF_SIGLA) %>%
-  dplyr::select(-NM_UF, -CD_GCUF, -`2016`, -`2017`) %>%      #drop columns
+  dplyr::select(-NM_UF, -CD_GCUF) %>%      #drop columns
   filter(!is.na(state)) %>%   #safer way to remove text line at bottom of state column
-  mutate_at(vars("2000":"2015"), as.numeric) 
+  mutate_at(vars("2001":"2018"), as.numeric) 
 
 meat_prod_Astates_long <- meat_prod_Astates %>%
    gather(key = year, value = meat_kg, -state) %>%
@@ -182,24 +180,24 @@ meat_prod_Astates_long <- meat_prod_Astates %>%
    dplyr::select(-meat_kg)
 
 ##DAIRY
-dairy_prod_Amunis <- dairy_prod_Amunis_Data %>%
-  rename(muniID = `IBGE CODE`) %>%
-  filter(!is.na(muniID)) %>%   #safer way to remove text line in muniID
-  mutate(state = substr(muniID, 1, 2)) %>%     #extract the muniID
-  mutate_at(vars("2000":"2015"), as.numeric) %>%  #convert values to numeric
-  dplyr::select(-Municipality)   #drop unwanted columns
+# dairy_prod_Amunis <- dairy_prod_Amunis_Data %>%
+#   rename(muniID = `IBGE CODE`) %>%
+#   filter(!is.na(muniID)) %>%   #safer way to remove text line in muniID
+#   mutate(state = substr(muniID, 1, 2)) %>%     #extract the muniID
+#   mutate_at(vars("2000":"2015"), as.numeric) %>%  #convert values to numeric
+#   dplyr::select(-Municipality)   #drop unwanted columns
+# 
+# dairy_prod_Astates <- dairy_prod_Amunis %>%
+#   group_by(state) %>%
+#   mutate_all(funs(. * 1.03 * 1000)) %>%     #convert from thousand litres to kgs
+#   summarise_all(sum, na.rm=T) %>%    #summarise munis to states
+#   mutate(state=replace(state, 1:length(Astate_codes$stateid), Astate_codes$state)) #re-label stated ids with state abbrevs
 
-dairy_prod_Astates <- dairy_prod_Amunis %>%
-  group_by(state) %>%
-  mutate_all(funs(. * 1.03 * 1000)) %>%     #convert from thousand litres to kgs
-  summarise_all(sum, na.rm=T) %>%    #summarise munis to states
-  mutate(state=replace(state, 1:length(Astate_codes$stateid), Astate_codes$state)) #re-label stated ids with state abbrevs
-
-dairy_prod_Astates_long <- dairy_prod_Astates %>%
-  gather(key = year, value = dairy_kg, -state, -muniID) %>%
-  mutate_at(vars(year), as.integer) %>%
-  mutate(dairy_gg = dairy_kg * 0.000001) %>%  #convert from kg to gg
-  dplyr::select(-dairy_kg, -muniID)
+# dairy_prod_Astates_long <- dairy_prod_Astates %>%
+#   gather(key = year, value = dairy_kg, -state, -muniID) %>%
+#   mutate_at(vars(year), as.integer) %>%
+#   mutate(dairy_gg = dairy_kg * 0.000001) %>%  #convert from kg to gg
+#   dplyr::select(-dairy_kg, -muniID)
 
 
 #MAIZE
@@ -208,7 +206,7 @@ maize_prod_Amunis <- maize_prod_Amunis_Data %>%
   rename(muniID = `IBGE CODE`) %>%
   filter(!is.na(muniID)) %>%   #safer way to remove text line in muniID
   mutate(state = substr(muniID, 1, 2)) %>%     #extract the muniID
-  mutate_at(vars("2000":"2015"), as.numeric) %>%  #convert values to numeric
+  mutate_at(vars("2001":"2018"), as.numeric) %>%  #convert values to numeric
   dplyr::select(-Municipality)   #drop unwanted columns
 
 maize_prod_Astates <- maize_prod_Amunis %>%
@@ -222,32 +220,12 @@ maize_prod_Astates_long <- maize_prod_Astates %>%
   mutate(maize_gg = maize_kg * 0.001) %>%  #convert from tons to gg
   dplyr::select(-maize_kg, -muniID)
 
-#MAIZE2
-maize2_prod_Amunis <- maize2_prod_Amunis_Data %>%
-  rename(muniID = `IBGE CODE`) %>%
-  filter(!is.na(muniID)) %>%   #safer way to remove text line in muniID
-  mutate(state = substr(muniID, 1, 2)) %>%     #extract the muniID
-  mutate_at(vars("2003":"2015"), as.numeric) %>%  #convert values to numeric
-  dplyr::select(-Municipality)   #drop unwanted columns
-
-maize2_prod_Astates <- maize2_prod_Amunis %>%
-  group_by(state) %>%
-  summarise_all(sum, na.rm=T) %>%    #summarise munis to states
-  mutate(state=replace(state, 1:length(Astate_codes$stateid), Astate_codes$state)) #re-label stated ids with state abbrevs
-
-maize2_prod_Astates_long <- maize2_prod_Astates %>%
-  gather(key = year, value = maize2_kg, -state, -muniID) %>%
-  mutate_at(vars(year), as.integer) %>%
-  mutate(maize2_gg = maize2_kg * 0.001) %>%  #convert from tons to gg
-  dplyr::select(-maize2_kg, -muniID)
-
-
 ##SOY
 soy_prod_Amunis <- soy_prod_Amunis_Data %>%
   rename(muniID = `IBGE CODE`) %>%
   filter(!is.na(muniID)) %>%   #safer way to remove text line in muniID
   mutate(state = substr(muniID, 1, 2)) %>%     #extract the muniID
-  mutate_at(vars("2000":"2015"), as.numeric) %>%  #convert values to numeric
+  mutate_at(vars("2001":"2018"), as.numeric) %>%  #convert values to numeric
   dplyr::select(-Municipality)   #drop unwanted columns
 
 soy_prod_Astates <- soy_prod_Amunis %>%
@@ -261,11 +239,7 @@ soy_prod_Astates_long <- soy_prod_Astates %>%
   mutate(soy_gg = soy_kg * 0.001) %>%  #convert from tons to gg
   dplyr::select(-soy_kg, -muniID)
 
-prod_state_year <- left_join(meat_prod_Astates_long, dairy_prod_Astates_long, by = c("year", "state"))
-
-prod_state_year <- left_join(prod_state_year, maize_prod_Astates_long, by = c("year", "state"))
-
-prod_state_year <- left_join(prod_state_year, maize2_prod_Astates_long, by = c("year", "state"))
+prod_state_year <- left_join(meat_prod_Astates_long, maize_prod_Astates_long, by = c("year", "state"))
 
 prod_state_year <- left_join(prod_state_year, soy_prod_Astates_long, by = c("year", "state"))
 
@@ -321,21 +295,16 @@ Using these values we can check what the observed production quantities would im
 #first, combine maize2 with maize
 psimy_long_sim  <- psimy_long_sim %>%
   spread(commodity, sumsim) %>%
-  mutate(all_maize_gg = maize_gg + maize2_gg) %>%
-  select(-maize_gg, -maize2_gg) %>%
-  rename(maize_gg = all_maize_gg) %>%
   gather(key = commodity, value = sumsim, -year, -simulated)
 
 
 psimy_long_sim  <- psimy_long_sim %>%
-  mutate(cells = if_else(commodity == "dairy_gg", sumsim / 2.5, 
-      if_else(commodity == "maize_gg", sumsim / 30,
+  mutate(cells = if_else(commodity == "maize_gg", sumsim / 30,
       if_else(commodity == "meat_gg", sumsim / 0.275, sumsim / 20)
-      ))) %>%
-  mutate(commodity = if_else(commodity == "dairy_gg", "dairy", 
-      if_else(commodity == "maize_gg", "maize",
+      )) %>%
+  mutate(commodity = if_else(commodity == "maize_gg", "maize",
       if_else(commodity == "meat_gg", "meat", "soy"
-      )))
+      ))
   )
 
 psimy_long_sim %>% 
@@ -363,7 +332,7 @@ psimy_wide_sim
 
 ```
 
-From the observed production data we see increasing required cells, from 20,000 to 40,000
+From the observed production data we see increasing required cells, from 20,000 to 30,000
 
 To compare this estimated number of cells (from perfect production) with the number of cells observed in land cover maps, we first need to aggregeate the production data to 'Agri' to match the LC data (and set Pasture equal to meat)
 
@@ -500,7 +469,7 @@ joined %>% ggplot(aes(x = prod_cells, y = lc_cells, colour=year, shape=LC)) +
 
 We see that for maximum (perfect) production, neither Agri nor Pasture correlate well. 
 
-When we plot the 40% conversion (above) we see Agri matches up a little better.
+When we plot the 40% conversion (below) we see Agri matches up a little better.
 
 ```{r}
 
@@ -531,14 +500,6 @@ joined %>%
 
 
 
-Questions:
-- is it right that yields of agri have not improved through time?; 
-Well, yes we can see this from figures above... gg of both soy and maize have increased as well as overall Agri land cover area (cells). But pasture land cover (cells) has increased only a little relative to production (gg) 
-
-So why have pasture yields increased through time? Or has it been grassland that has been converted to pasture? This wouldn't be picked up by our land cover maps data.  Could we check this issue by comparing land cover data from maps and pasture area from IBGE? We have planted/harvested data for soy and maize (which we could compare to LC maps) but not for dairy and meat...
-
-
-
 Assuming 0.4 production efficiency for Soy and Maize, what is the number of cells that would be required given the observed production?
 
 
@@ -550,7 +511,7 @@ psimy_long_sim  <- psimy_long_sim %>%
 
 
 psimy_long_sim %>% 
-  filter(commodity == "maize_gg" | commodity == "soy_gg") %>%
+  filter(commodity == "maize" | commodity == "soy") %>%
   ggplot(aes(x = year, y = prod04_cells, colour = commodity)) + 
   geom_line(size = 1) +
   scale_y_continuous(name = "Cells", labels = scales::comma) +
