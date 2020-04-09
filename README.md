@@ -1,4 +1,6 @@
 # Brazil Agri Analysis
+[![DOI](https://zenodo.org/badge/139595641.svg)](https://zenodo.org/badge/latestdoi/139595641)
+
 Analysis of Brazil agricultural comodities data for CRAFTY-Brazil modelling project
 
 The key analysis files are:
