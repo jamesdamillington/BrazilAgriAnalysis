@@ -2,7 +2,11 @@
 title: "Change Map Analysis"
 author: "James Millington"
 date: "28 January 2020"
-output: html_document
+output: 
+  html_document: 
+    keep_md: yes
+    code_folding: hide
+    df_print: paged
 ---
 
 ## Examine differences between pairs of raster maps for sequential years
@@ -98,7 +102,7 @@ makeObsLUmap <- function(LU, year) {
 
 ```{r results='hide', warning=F, message=F}
 
-path <- "C:/Users/k1076631/Google Drive/Shared/Crafty Telecoupling/Data/LandCover/MapBiomas4/BrazilInputMaps/Data/Classified/"
+path <- "E:/OneDrive - King's College London/Research/Projects/Belmont/Modelling/CRAFTY/Crafty Telecoupling/Data/LandCover/MapBiomas4/BrazilInputMaps/Data/Classified/"
 
 data_yrs <- seq(2001, 2018, 1)
 
@@ -121,7 +125,7 @@ for(i in 1:(length(data_yrs)-1)){
 }
 
 #mask to study area
-munis.r <- raster("C:/Users/k1076631/Google Drive/Shared/Crafty Telecoupling/Data/CRAFTYInput/Data/sim10_BRmunis_latlon_5km.asc")
+munis.r <- raster("E:/OneDrive - King's College London/Research/Projects/Belmont/Modelling/CRAFTY/Crafty Telecoupling/Data/CRAFTYInput/Data/sim10_BRmunis_latlon_5km.asc")
 
 sA <- mask(x=sA, mask=munis.r)   
 sA <- trim(sA, padding=2)
