@@ -19,6 +19,8 @@ library(readxl)
 ```
 
 
+## Harvested Area
+
 Data from IBGE
 ```{r warning=F, message=F}
 ##Load Area Harvested Data
@@ -27,7 +29,7 @@ Data from IBGE
 maize_harv_Amunis_Data <- read_excel("ProductionData/maize_brazil.xlsx", sheet = "Harvested area (hectares)", skip = 1, na = c("", "-", "..."))
 
 #maize data are by municiaplity for all states (Amunis)
-maize2_harv_Amunis_Data <- read_excel("ProductionData/maize2_brazil.xlsx", sheet = "Harvested area (hectares)", skip = 1, na = c("", "-", "..."), col_types = c("numeric", "guess","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric"))  #need to specify for 2010 column  
+maize2_harv_Amunis_Data <- read_excel("ProductionData/maize2_brazil.xlsx", sheet = "Harvested area (hectares)", skip = 1, na = c("", "-", "..."), col_types = c("numeric", "guess","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric"))  #need to specify for 2010 column  
 
 #maize data are by municiaplity for all states (Amunis)
 soy_harv_Amunis_Data <- read_excel("ProductionData/soybean_brazil.xlsx", sheet = "Harvested area (hectares)", skip = 1, na = c("", "-", "..."))
@@ -35,8 +37,11 @@ soy_harv_Amunis_Data <- read_excel("ProductionData/soybean_brazil.xlsx", sheet =
 
 Fstate_vals <- c(17,	29,	31,	35,	41,	42,	43,	50,	51,	52)
 Fstate_abbrev <- c("TO", "BA", "MG", "SP", "PR",  "SC", "RS", "MS", "MT", "GO")
+```
 
 
+```{r warning=F, message=F}
+#Manipulate data
 
 #MAIZE
 #has the same data strucutre (with some differences in unit conversions - could write function to cover both?) 
@@ -44,7 +49,7 @@ maize_harv_Amunis <- maize_harv_Amunis_Data %>%
   rename(muniID = `IBGE CODE`) %>%
   filter(!is.na(muniID)) %>%   #safer way to remove text line in muniID
   mutate(state = substr(muniID, 1, 2)) %>%     #extract the muniID
-  mutate_at(vars("2000":"2015"), as.numeric) %>%  #convert values to numeric
+  mutate_at(vars("2001":"2018"), as.numeric) %>%  #convert values to numeric
   dplyr::select(-Municipality)   #drop unwanted columns
 
 maize_harv_Astates <- maize_harv_Amunis %>%
@@ -56,13 +61,17 @@ maize_harv_Astates_long <- maize_harv_Astates %>%
   gather(key = year, value = maize_ha, -state) %>%
   mutate_at(vars(year), as.integer)
 
+maize_harv_Amunis_long <- maize_harv_Amunis %>%
+  dplyr::select(-state) %>%
+  gather(key = year, value = maize_ha, -muniID) %>%
+  mutate_at(vars(year), as.integer)
 
 #MAIZE2
 maize2_harv_Amunis <- maize2_harv_Amunis_Data %>%
   rename(muniID = `IBGE CODE`) %>%
   filter(!is.na(muniID)) %>%   #safer way to remove text line in muniID
   mutate(state = substr(muniID, 1, 2)) %>%     #extract the muniID
-  mutate_at(vars("2003":"2015"), as.numeric) %>%  #convert values to numeric
+  mutate_at(vars("2003":"2018"), as.numeric) %>%  #convert values to numeric
   dplyr::select(-Municipality)   #drop unwanted columns
 
 maize2_harv_Astates <- maize2_harv_Amunis %>%
@@ -74,13 +83,17 @@ maize2_harv_Astates_long <- maize2_harv_Astates %>%
   gather(key = year, value = maize2_ha, -state) %>%
   mutate_at(vars(year), as.integer)
 
+maize2_harv_Amunis_long <- maize2_harv_Amunis %>%
+  dplyr::select(-state) %>%
+  gather(key = year, value = maize2_ha, -muniID) %>%
+  mutate_at(vars(year), as.integer)
 
 ##SOY
 soy_harv_Amunis <- soy_harv_Amunis_Data %>%
   rename(muniID = `IBGE CODE`) %>%
   filter(!is.na(muniID)) %>%   #safer way to remove text line in muniID
   mutate(state = substr(muniID, 1, 2)) %>%     #extract the muniID
-  mutate_at(vars("2000":"2015"), as.numeric) %>%  #convert values to numeric
+  mutate_at(vars("2001":"2018"), as.numeric) %>%  #convert values to numeric
   dplyr::select(-Municipality)   #drop unwanted columns
 
 soy_harv_Astates <- soy_harv_Amunis %>%
@@ -92,7 +105,38 @@ soy_harv_Astates_long <- soy_harv_Astates %>%
   gather(key = year, value = soy_ha, -state) %>%
   mutate_at(vars(year), as.integer)
 
+soy_harv_Amunis_long <- soy_harv_Amunis %>%
+  dplyr::select(-state) %>%
+  gather(key = year, value = soy_ha, -muniID) %>%
+  mutate_at(vars(year), as.integer)
+```
 
+```{r warning=F, message=F}
+harv_muni_year <- left_join(maize_harv_Amunis_long, maize2_harv_Amunis_long, by = c("year", "muniID"))
+ 
+harv_muni_year <- left_join(harv_muni_year, soy_harv_Amunis_long, by = c("year", "muniID"))
+
+harv_muni_xxxx <- harv_muni_year %>%
+  filter(year == 2018) %>%
+  #filter(simulated == "TRUE") %>%
+  #dplyr::select(muniID, maize_ha, soy_ha) %>%
+  mutate(maize2_ha = replace(maize2_ha, is.na(maize2_ha),0)) %>%
+  mutate(maize_ha = replace(maize_ha, is.na(maize_ha),0)) %>%
+  mutate(soy_ha = replace(soy_ha, is.na(soy_ha),0)) %>%
+  mutate(soy_ha = if_else(soy_ha > maize2_ha,soy_ha - maize2_ha, 0)) %>%
+  mutate(total_ha = rowSums(dplyr::select(., ends_with("_ha")), na.rm=T)) %>%
+  mutate(maize_prop = round(maize_ha / total_ha,3)) %>%
+  mutate(soy_prop = round(soy_ha / total_ha,3)) %>%
+  mutate(cum_ms_prop = rowSums(select(., "maize_prop", "soy_prop"))) %>%
+  mutate(dc_prop = round(maize2_ha / total_ha,3))
+
+write_csv(harv_muni_xxxx, "muni2018_harvestAreas_newDC.csv")
+
+```
+
+
+```{r warning=F, message=F}
+#create new data frame
 harv_state_year <- left_join(maize_harv_Astates_long, maize2_harv_Astates_long, by = c("year", "state"))
 
 harv_state_year <- left_join(harv_state_year, soy_harv_Astates_long, by = c("year", "state"))
@@ -100,34 +144,63 @@ harv_state_year <- left_join(harv_state_year, soy_harv_Astates_long, by = c("yea
 #add focal states indicator
 harv_state_year <- harv_state_year %>%
   mutate(simulated = state %in% Fstate_vals) %>%
-  #add total ha for sanity check (rmeove later)
+  #total ha 
   mutate(total_ha = rowSums(select(., ends_with("_ha")), na.rm=T)) %>%  
   #calculate double cropping
   mutate(suffsoy = if_else(!is.na(maize2_ha), soy_ha >= maize2_ha, F)) %>%
-  mutate(DC_ha = if_else(suffsoy, 2 * maize2_ha, 0)) %>%  #DC area is twice maize2
-  mutate(soy_ha = if_else(suffsoy, soy_ha - maize2_ha, soy_ha)) %>% #reduce 'pure' soy by maize2 area
-  mutate(maize2_ha = if_else(!is.na(maize2_ha),if_else(suffsoy, 0, maize_ha),0))  
+  #DC area is twice maize2
+  mutate(DC_ha = if_else(suffsoy, 2 * maize2_ha, 
+    if_else(!is.na(maize2_ha), 2 * soy_ha, 0))) %>% 
+  #area of soy in DC
+  mutate(soyDC_ha = if_else(suffsoy, maize2_ha, 
+    if_else(!is.na(maize2_ha), soy_ha, 0))) %>% 
+  #area of soy not in DC
+  mutate(soyNDC_ha = if_else(suffsoy, soy_ha - maize2_ha, 
+    if_else(!is.na(maize2_ha), 0, soy_ha))) %>% 
+  mutate(m2DC_ha = if_else(suffsoy, maize2_ha, 
+    if_else(!is.na(maize2_ha), soy_ha, 0))) %>%
+  mutate(m2NDC_ha = if_else(suffsoy, 0,
+    if_else(!is.na(maize2_ha), maize2_ha - soy_ha, 0))) %>%
+  #proportion of m2 in DC
+  mutate(m2DC_prop = if_else(maize2_ha > 0, m2DC_ha / maize2_ha, 0)) %>%
+  #proportion of soy in DC
+  mutate(soyDC_prop = if_else(soyDC_ha > 0, soyDC_ha / soy_ha, 0)) 
+
+harv_state_year_props <- harv_state_year %>%
+  select(state, year, total_ha, soyDC_prop, m2DC_prop) %>%
+  mutate(maize_prop = 1) 
 
 psy_long <- harv_state_year %>%
-  select(-total_ha) %>%
+  select(-total_ha, -soyDC_prop, -m2DC_prop) %>%
   gather(key = commodity, value = ha, -state, -year, -simulated, -suffsoy)
 
 psimy_long <- psy_long %>%
   group_by(simulated, year, commodity) %>%
   summarise(sumsim = sum(ha, na.rm=T))
 
-harv_state_year
+harv_state_year_props
 
 ```
 
+Filter for 2001 only to get proportion of maize vs soy by state (for model initialisation)
+```{r warning=F, message=F}
+harv_state_2001 <- harv_state_year %>%
+  filter(year == 2001) %>%
+  filter(simulated == "TRUE") %>%
+  select(state, maize_ha, soy_ha) %>%
+  mutate(total_ha = rowSums(select(., ends_with("_ha")), na.rm=T)) %>%
+  mutate(maize_prop = maize_ha / total_ha)
+
+harv_state_2001
+```
 
 ```{r warning=F, message=F}
-
+#plot areas through time
 psimy_long_sim <- psimy_long %>% 
   filter(simulated == "TRUE") 
   
-
 psimy_long_sim %>% 
+  filter(commodity == "DC_ha" | commodity == "maize_ha" | commodity == "soyNDC_ha" | commodity == "m2NDC_ha") %>%
   ggplot(aes(x = year, y = sumsim, fill = commodity)) + 
   geom_bar(stat = "identity", colour="white") +
   scale_y_continuous(name = "Harvested Area (ha)", labels = scales::comma) +
@@ -135,6 +208,7 @@ psimy_long_sim %>%
   ggtitle("IBGE Data")
 
 psimy_long_sim %>% 
+  filter(commodity == "DC_ha" | commodity == "maize_ha" | commodity == "soyNDC_ha" | commodity == "m2NDC_ha") %>%
   ggplot(aes(x = year, y = sumsim, fill = commodity)) + 
   geom_bar(stat = "identity", colour="white", position="fill") +
   scale_y_continuous(name = "Harvested Area (ha)", labels = scales::percent_format()) +
@@ -149,3 +223,213 @@ psimy_long_sim %>%
   ggtitle("IBGE Data")
 
 ```
+
+
+## Production
+
+DC production is maize2 production + proportion of soy production in DC
+
+```{r warning=F, message=F}
+#maize data are by municiaplity for all states (Amunis)
+maize_prod_Amunis_Data <- read_excel("ProductionData/maize_brazil.xlsx", sheet = "Production (tons)", skip = 1, na = c("", "-", "..."))
+
+#maize data are by municiaplity for all states (Amunis)
+maize2_prod_Amunis_Data <- read_excel("ProductionData/maize2_brazil.xlsx", sheet = "Production (tons)", skip = 1, na = c("", "-", "..."), col_types = c("numeric", "guess","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric"))  #need to specify for 2010 column
+
+#maize data are by municiaplity for all states (Amunis)
+soy_prod_Amunis_Data <- read_excel("ProductionData/soybean_brazil.xlsx", sheet = "Production (Tons)", skip = 1, na = c("", "-", "..."))
+```
+
+```{r warning=F, message=F}
+#Manipulate data
+
+#MAIZE
+#tonss the same data strucutre (with some differences in unit conversions - could write function to cover both?) 
+maize_prod_Amunis <- maize_prod_Amunis_Data %>%
+  rename(muniID = `IBGE CODE`) %>%
+  filter(!is.na(muniID)) %>%   #safer way to remove text line in muniID
+  mutate(state = substr(muniID, 1, 2)) %>%     #extract the muniID
+  mutate_at(vars("2001":"2018"), as.numeric) %>%  #convert values to numeric
+  dplyr::select(-Municipality)   #drop unwanted columns
+
+maize_prod_Astates <- maize_prod_Amunis %>%
+  group_by(state) %>%
+  summarise_all(sum, na.rm=T) %>%  
+  dplyr::select(-muniID)   #drop unwanted columns
+
+maize_prod_Astates_long <- maize_prod_Astates %>%
+  gather(key = year, value = maize_tons, -state) %>%
+  mutate_at(vars(year), as.integer)
+
+
+#MAIZE2
+maize2_prod_Amunis <- maize2_prod_Amunis_Data %>%
+  rename(muniID = `IBGE CODE`) %>%
+  filter(!is.na(muniID)) %>%   #safer way to remove text line in muniID
+  mutate(state = substr(muniID, 1, 2)) %>%     #extract the muniID
+  mutate_at(vars("2003":"2015"), as.numeric) %>%  #convert values to numeric
+  dplyr::select(-Municipality)   #drop unwanted columns
+
+maize2_prod_Astates <- maize2_prod_Amunis %>%
+  group_by(state) %>%
+  summarise_all(sum, na.rm=T) %>%  
+  dplyr::select(-muniID)   #drop unwanted columns
+
+maize2_prod_Astates_long <- maize2_prod_Astates %>%
+  gather(key = year, value = maize2_tons, -state) %>%
+  mutate_at(vars(year), as.integer)
+
+
+##SOY
+soy_prod_Amunis <- soy_prod_Amunis_Data %>%
+  rename(muniID = `IBGE CODE`) %>%
+  filter(!is.na(muniID)) %>%   #safer way to remove text line in muniID
+  mutate(state = substr(muniID, 1, 2)) %>%     #extract the muniID
+  mutate_at(vars("2001":"2018"), as.numeric) %>%  #convert values to numeric
+  dplyr::select(-Municipality)   #drop unwanted columns
+
+soy_prod_Astates <- soy_prod_Amunis %>%
+  group_by(state) %>%
+  summarise_all(sum, na.rm=T) %>%  
+  dplyr::select(-muniID)   #drop unwanted columns
+
+soy_prod_Astates_long <- soy_prod_Astates %>%
+  gather(key = year, value = soy_tons, -state) %>%
+  mutate_at(vars(year), as.integer)
+```
+
+
+```{r warning=F, message=F}
+#create new data frame
+prod_state_year <- left_join(maize_prod_Astates_long, maize2_prod_Astates_long, by = c("year", "state"))
+
+prod_state_year <- left_join(prod_state_year, soy_prod_Astates_long, by = c("year", "state"))
+
+
+```
+
+
+```{r warning=F, message=F}
+
+prod_harv <- left_join(prod_state_year, harv_state_year_props, by = c("year", "state")) 
+
+```
+
+
+
+
+## Planted Area
+
+Data from IBGE
+```{r warning=F, message=F}
+##Load Area Planted Data
+
+#maize data are by municiaplity for all states (Amunis)
+maize_plant_Amunis_Data <- read_excel("ProductionData/maize_brazil.xlsx", sheet = "Planted area (hectares)", skip = 1, na = c("", "-", "..."))
+
+#maize data are by municiaplity for all states (Amunis)
+maize2_plant_Amunis_Data <- read_excel("ProductionData/maize2_brazil.xlsx", sheet = "Planted area (hectares)", skip = 1, na = c("", "-", "..."), col_types = c("numeric", "guess","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric"))  #need to specify for 2010 column  
+
+#maize data are by municiaplity for all states (Amunis)
+soy_plant_Amunis_Data <- read_excel("ProductionData/soybean_brazil.xlsx", sheet = "Planted area (hectares)", skip = 1, na = c("", "-", "..."))
+
+
+Fstate_vals <- c(17,	29,	31,	35,	41,	42,	43,	50,	51,	52)
+Fstate_abbrev <- c("TO", "BA", "MG", "SP", "PR",  "SC", "RS", "MS", "MT", "GO")
+```
+
+
+```{r warning=F, message=F}
+#Manipulate data
+
+#MAIZE
+#has the same data strucutre (with some differences in unit conversions - could write function to cover both?) 
+maize_plant_Amunis <- maize_plant_Amunis_Data %>%
+  rename(muniID = `IBGE CODE`) %>%
+  filter(!is.na(muniID)) %>%   #safer way to remove text line in muniID
+  mutate(state = substr(muniID, 1, 2)) %>%     #extract the muniID
+  mutate_at(vars("2001":"2018"), as.numeric) %>%  #convert values to numeric
+  dplyr::select(-Municipality)   #drop unwanted columns
+
+maize_plant_Astates <- maize_plant_Amunis %>%
+  group_by(state) %>%
+  summarise_all(sum, na.rm=T) %>%  
+  dplyr::select(-muniID)   #drop unwanted columns
+
+maize_plant_Astates_long <- maize_plant_Astates %>%
+  gather(key = year, value = maize_ha, -state) %>%
+  mutate_at(vars(year), as.integer)
+
+maize_plant_Amunis_long <- maize_plant_Amunis %>%
+  dplyr::select(-state) %>%
+  gather(key = year, value = maize_ha, -muniID) %>%
+  mutate_at(vars(year), as.integer)
+
+#MAIZE2
+maize2_plant_Amunis <- maize2_plant_Amunis_Data %>%
+  rename(muniID = `IBGE CODE`) %>%
+  filter(!is.na(muniID)) %>%   #safer way to remove text line in muniID
+  mutate(state = substr(muniID, 1, 2)) %>%     #extract the muniID
+  mutate_at(vars("2003":"2018"), as.numeric) %>%  #convert values to numeric
+  dplyr::select(-Municipality)   #drop unwanted columns
+
+maize2_plant_Astates <- maize2_plant_Amunis %>%
+  group_by(state) %>%
+  summarise_all(sum, na.rm=T) %>%  
+  dplyr::select(-muniID)   #drop unwanted columns
+
+maize2_plant_Astates_long <- maize2_plant_Astates %>%
+  gather(key = year, value = maize2_ha, -state) %>%
+  mutate_at(vars(year), as.integer)
+
+maize2_plant_Amunis_long <- maize2_plant_Amunis %>%
+  dplyr::select(-state) %>%
+  gather(key = year, value = maize2_ha, -muniID) %>%
+  mutate_at(vars(year), as.integer)
+
+##SOY
+soy_plant_Amunis <- soy_plant_Amunis_Data %>%
+  rename(muniID = `IBGE CODE`) %>%
+  filter(!is.na(muniID)) %>%   #safer way to remove text line in muniID
+  mutate(state = substr(muniID, 1, 2)) %>%     #extract the muniID
+  mutate_at(vars("2001":"2018"), as.numeric) %>%  #convert values to numeric
+  dplyr::select(-Municipality)   #drop unwanted columns
+
+soy_plant_Astates <- soy_plant_Amunis %>%
+  group_by(state) %>%
+  summarise_all(sum, na.rm=T) %>%  
+  dplyr::select(-muniID)   #drop unwanted columns
+
+soy_plant_Astates_long <- soy_plant_Astates %>%
+  gather(key = year, value = soy_ha, -state) %>%
+  mutate_at(vars(year), as.integer)
+
+soy_plant_Amunis_long <- soy_plant_Amunis %>%
+  dplyr::select(-state) %>%
+  gather(key = year, value = soy_ha, -muniID) %>%
+  mutate_at(vars(year), as.integer)
+```
+
+```{r warning=F, message=F}
+plant_muni_year <- left_join(maize_plant_Amunis_long, maize2_plant_Amunis_long, by = c("year", "muniID"))
+ 
+plant_muni_year <- left_join(plant_muni_year, soy_plant_Amunis_long, by = c("year", "muniID"))
+
+plant_muni_xxxx <- plant_muni_year %>%
+  filter(year == 2018) %>%
+  #filter(simulated == "TRUE") %>%
+  #dplyr::select(muniID, maize_ha, soy_ha) %>%
+  mutate(maize2_ha = replace(maize2_ha, is.na(maize2_ha),0)) %>%
+  mutate(maize_ha = replace(maize_ha, is.na(maize_ha),0)) %>%
+  mutate(soy_ha = replace(soy_ha, is.na(soy_ha),0)) %>%
+  mutate(soy_ha = if_else(soy_ha > maize2_ha,soy_ha - maize2_ha, 0)) %>%
+  mutate(total_ha = rowSums(dplyr::select(., ends_with("_ha")), na.rm=T)) %>%
+  mutate(maize_prop = round(maize_ha / total_ha,3)) %>%
+  mutate(soy_prop = round(soy_ha / total_ha,3)) %>%
+  mutate(cum_ms_prop = rowSums(select(., "maize_prop", "soy_prop"))) %>%
+  mutate(dc_prop = round(maize2_ha / total_ha,3))
+  
+write_csv(plant_muni_xxxx, "muni2018_plantedAreas_newDC.csv")
+
+```
+

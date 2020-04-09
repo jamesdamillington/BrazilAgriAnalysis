@@ -1,0 +1,201 @@
+---
+title: "Change Map Analysis"
+author: "James Millington"
+date: "28 January 2020"
+output: html_document
+---
+
+## Examine differences between pairs of raster maps for sequential years
+
+```{r results='hide', warning=F, message=F}
+
+library(tidyverse)
+library(caret)   #for confusionMatrix
+library(diffeR)  #for map comparison
+library(knitr)
+library(raster)
+library(rasterVis)
+library(gridExtra)
+
+
+####FUNCTIONS
+nat2pas <- function(x,y) { x == 1 & y == 5 }
+pas2nat <- function(x,y) { x == 5 & y == 1 }
+
+pas2ag <- function(x,y) { x == 5 & y == 3 }
+ag2pas <- function(x,y) { x == 3 & y == 5 }
+
+nat2ag <- function(x,y) { x == 1 & y == 3 }
+ag2nat <- function(x,y) { x == 3 & y == 1 }
+
+nat2oag <- function(x,y) { x == 1 & y == 2 }
+oag2nat <- function(x,y) { x == 2 & y == 1 }
+
+pas2oag <- function(x,y) { x == 5 & y == 2 }
+oag2pas <- function(x,y) { x == 2 & y == 5 }
+
+
+
+binRatify <- function(ras){
+  
+  ras <- ratify(ras)
+  rat <- levels(ras)[[1]]
+  rat$code <- c("No Change","Change")
+  #if(length(rat) == 1) rat$code <- "unknown"
+  #if(length(rat) == 2) rat$code <- c("No Change","Change")
+  
+  levels(ras) <- rat
+
+  return(ras)
+  
+}
+
+
+
+makeObsLUmap <- function(LU, year) {
+  
+  
+  #add categories for later plotting etc. (see https://stackoverflow.com/a/37214431)
+  LU <- ratify(LU)     #tell R that the map raster is categorical 
+  rat <- levels(LU)[[1]]    #apply the levels (i.e. categories) 
+
+  uLU <- unique(LU) 
+
+  LUcols <- c()
+  LUlabs <- c()
+  
+  if(1 %in% uLU) { 
+    LUcols <- c(LUcols, 'forestgreen') 
+    LUlabs <- c(LUlabs, 'Nat')  }
+  if(2 %in% uLU) { 
+    LUcols <- c(LUcols, 'darkcyan') 
+    LUlabs <- c(LUlabs, 'OAg') }
+  if(3 %in% uLU) { 
+    LUcols <- c(LUcols, 'wheat2') 
+    LUlabs <- c(LUlabs, 'Ag') }
+  if(4 %in% uLU) { 
+    LUcols <- c(LUcols, 'black') 
+    LUlabs <- c(LUlabs, 'Oth') }
+  if(5 %in% uLU) { 
+    LUcols <- c(LUcols, 'orange2') 
+    LUlabs <- c(LUlabs, 'Pas') }
+  
+  rat$LandUse <- LUlabs  
+  levels(LU) <- rat 
+  
+  p <- levelplot(LU, att = "LandUse", col.regions=LUcols, main = paste0(year),
+      par.settings = list(
+        layout.heights = list(top.padding = 0, bottom.padding = 0),
+        layout.widths = list(left.padding = 0, right.padding = 0) 
+        )
+      )  
+
+  return(p)
+}
+
+```
+
+
+```{r results='hide', warning=F, message=F}
+
+path <- "C:/Users/k1076631/Google Drive/Shared/Crafty Telecoupling/Data/LandCover/MapBiomas4/BrazilInputMaps/Data/Classified/"
+
+data_yrs <- seq(2001, 2018, 1)
+
+for(i in 1:(length(data_yrs)-1)){
+
+  print(paste0(data_yrs[i],"-",data_yrs[i+1]))
+  
+  #create a stack of rasters for first set of maps
+  innameA <- paste0(path,"LandCover",data_yrs[i],"_PastureB_Disagg.asc")
+  lcA <- raster(innameA)
+  
+  if(i == 1) sA <- stack(lcA)  else  sA <- stack(sA, lcA)
+  
+  #create a stack of rasters for second set of maps
+  innameB <- paste0(path,"LandCover",data_yrs[i+1],"_PastureB_Disagg.asc")
+  lcB <- raster(innameB)
+  
+  if(i == 1) sB <- stack(lcB)  else sB <- stack(sB, lcB) 
+  
+}
+
+#mask to study area
+munis.r <- raster("C:/Users/k1076631/Google Drive/Shared/Crafty Telecoupling/Data/CRAFTYInput/Data/sim10_BRmunis_latlon_5km.asc")
+
+sA <- mask(x=sA, mask=munis.r)   
+sA <- trim(sA, padding=2)
+
+sB <- mask(x=sB, mask=munis.r)   
+sB <- trim(sB, padding=2)
+
+
+```
+
+```{r results="asis"}
+
+LCnames <- c("Nat", "OtherAgri", "Agri", "Other", "Pasture")  #used to label error matrix in loop below
+
+comparisons <- c(nat2pas, pas2nat, nat2ag, ag2nat, pas2oag, oag2pas, nat2oag, oag2nat) 
+comparisons_n <- c("nat2pas", "pas2nat", "nat2ag", "ag2nat", "pas2oag", "oag2pas", "nat2oag", "oag2nat")
+
+
+for(i in 1:(length(data_yrs)-1)){
+  
+  #i <- 2 #for testing
+  
+  lul <- list()  #this will hold the plots for the LU map for this year
+  lul[[1]] <- makeObsLUmap(sA[[i]], paste0(data_yrs[i]))
+  lul[[2]] <- makeObsLUmap(sB[[i]], paste0(data_yrs[i+1]))
+  
+
+  #output the crosstab  
+  cat("  \n","  \n","Crosstab ",data_yrs[i],"-",data_yrs[i+1],"  \n") 
+  xtab <- crosstabm(sA[[i]], sB[[i]])
+  colnames(xtab) <- LCnames
+  rownames(xtab) <- LCnames
+  cat("  \n")
+  print(kable(xtab))
+  cat("  \n")
+  
+  pl <- list()  #this will hold the plots for the all map for this year
+  ts <- stack(sA[[i]], sB[[i]]) #stack used when creating difference maps
+
+  for(j in seq_along(comparisons)){
+    
+    #j <- 2 #for testing
+    np <- raster::overlay(x=ts, fun=comparisons[[j]])
+    
+    if(cellStats(np, sum) > 0) #if there are any differences
+    {
+      np <- binRatify(np) 
+      mycols <- c("lightgray", "red")
+    } else {
+      mycols <- c("lightgray") 
+    }
+    
+        #create the plot
+        p <- levelplot(np,
+        contour=F, 
+        margin=F,
+        colorkey=F,
+        scales=list(draw=FALSE),
+        col.regions= mycols,
+        main = comparisons_n[j],
+        par.settings = list(
+          layout.heights = list(top.padding = 0, bottom.padding = 0),
+          layout.widths = list(left.padding = 0, right.padding = 0) 
+          )
+        )
+    
+      pl[[j]] <- p   
+    
+  }
+  
+  
+  print(marrangeGrob(lul, nrow = 1, ncol = 2, top = paste0(data_yrs[i],"-",data_yrs[i+1])))
+  print(marrangeGrob(pl, nrow = 2, ncol = 4, top = paste0("Differences")))
+
+}
+
+```
